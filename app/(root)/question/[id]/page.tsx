@@ -40,7 +40,18 @@ const page = async (props: { params: Params, searchParams: SearchParams}) => {
 
   if (clerkId) {
     mongoUser = await getUserById({ userId: clerkId });
+    if (!mongoUser) {
+      return {
+        redirect: {
+          destination: "/sign-in",
+          permanent: false,
+        },
+      };
+    }   
   }
+
+  console.log(mongoUser, 'mongo');
+  
 
   /////////////////   const result = await getQuestionsById({ questionId: params.id }); ////////////////////
 
