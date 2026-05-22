@@ -128,5 +128,5 @@ Follow these simple steps to spin up a production-grade instance of the platform
 
 1. **Clone the Repository:**
    ```bash
-   git clone [https://github.com/your-username/dev-overflow.git](https://github.com/your-username/dev-overflow.git)
+   git clone [https://github.com/your-username/dev-overflow.git](https://github.com/Mr-armanalam/dev-overflow.git)
    cd dev-overflow
