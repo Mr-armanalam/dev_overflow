@@ -19,7 +19,7 @@ The primary interface provides an aggregated stream of forum queries sorted usin
 * **Authentication Fallbacks:** Features modular login and registration prompts dynamically pinned to the bottom of the navigation stream for unauthenticated traffic.
 
 🖼️ **Interface View:**
-![Home Dashboard](./assets/Screenshot%202024-11-17%20055304.jpg)
+![Home Dashboard](./assets/Screenshot_055304.png)
 
 ---
 
@@ -30,7 +30,7 @@ An advanced lookup interface capable of scraping indexed entries matching a unif
 * **Visual Categorization:** Dynamically maps search results with contextual icons based on record type.
 
 🖼️ **Interface View:**
-![Global Search Component](./assets/Screenshot%20(10)1.jpg)
+![Global Search Component](./assets/Screenshot_101.png)
 
 ---
 
@@ -41,7 +41,7 @@ A grid-based directory built to showcase platform contributors and encourage col
 * **Custom Metric Sorting:** Features dropdown filters to arrange cards by criteria like activity or registration dates.
 
 🖼️ **Interface View:**
-![Community Layout](./assets/Screenshot%202024-11-17%20064115.jpg)
+![Community Layout](./assets/Screenshot_064115.png)
 
 ---
 
@@ -52,7 +52,7 @@ A comprehensive, form-validated interface designed to gather structured technica
 * **Validation Bounds Engine:** Enforces client-side string limits, displaying inline layout warnings if title or body inputs fall below professional thresholds.
 
 🖼️ **Interface View:**
-![Ask Question Form](./assets/Screenshot%20(9).jpg)
+![Ask Question Form](./assets/Screenshot_9.png)
 
 ---
 
@@ -62,7 +62,7 @@ An isolated collection interface allowing logged-in developers to quickly access
 * **Asynchronous Un-saving Rails:** Allows immediate bookmarked toggling with asynchronous interface cleanup, removing items from the dashboard without a full layout re-render.
 
 🖼️ **Interface View:**
-![Saved Collections View](./assets/Screenshot%20(7).jpg)
+![Saved Collections View](./assets/Screenshot_7.png)
 
 ---
 
@@ -73,7 +73,7 @@ A beautifully structured profile dashboard engineered to display a developer's t
 * **Activity Stream Anchors:** Features integrated child navigation links to swap historical views between authored `Top Posts` and community `Answers`.
 
 🖼️ **Interface View:**
-![User Profile Dashboard](./assets/Screenshot%202024-11-17%20064447.jpg)
+![User Profile Dashboard](./assets/Screenshot_064447.png)
 
 ---
 
@@ -83,7 +83,7 @@ An isolated modal management window providing secure administrative adjustments.
 * **OAuth Integrity Diagnostics:** Displays clear connectivity markers for linked platforms, including explicit notification links to easily reconnect third-party sign-ins like Google.
 
 🖼️ **Interface View:**
-![Account Management Modal](./assets/Screenshot%20(8).jpg)
+![Account Management Modal](./assets/Screenshot_8.png)
 
 ---
 
