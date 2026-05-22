@@ -47,7 +47,7 @@ A grid-based directory built to showcase platform contributors and encourage col
 
 ### 4. Rich-Text Question Formulation Suite (`/ask-question`)
 A comprehensive, form-validated interface designed to gather structured technical questions.
-* **WYSIWYG Workspace:** Integrates a responsive TinyMCE cloud workspace supporting multi-line code styling, structural heading tabs, and live text formats.
+* **Workspace:** Integrates a responsive TinyMCE cloud workspace supporting multi-line code styling, structural heading tabs, and live text formats.
 * **Automated Tag Tokenizer:** Features an input processor that converts typed keys or commas into atomic visual tag components.
 * **Validation Bounds Engine:** Enforces client-side string limits, displaying inline layout warnings if title or body inputs fall below professional thresholds.
 
