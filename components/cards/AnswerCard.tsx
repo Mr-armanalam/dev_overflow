@@ -2,7 +2,7 @@ import Link from "next/link";
 import React from "react";
 import Metric from "../Metric";
 import { formatNumber, getTimestamp } from "@/lib/utils";
-import { SignedIn } from "@clerk/nextjs";
+import { Show } from "@clerk/nextjs";
 import EditDeleteAction from "../shared/EditDeleteAction";
 
 export interface QcProps {
@@ -46,11 +46,11 @@ const AnswerCard = ({
           </h3>
         </div>
 
-        <SignedIn>
+        <Show when="signed-in">
           {showActionButton && (
             <EditDeleteAction type="Answer" itemId={JSON.stringify(_id)} />
           )}
-        </SignedIn>
+        </Show>
       </Link>
 
       <div className="flex-between mt-6 w-full flex-wrap gap-3">
