@@ -12,6 +12,9 @@ import { geminiProvider, type LlmProvider } from "./client";
 export const AI_MODEL_FOR_TASK: Record<AiTask, string> = {
   "answer-draft": "gemini-2.5-flash",
   "tag-suggest": "gemini-2.5-flash",
+  // text-embedding-004 — the only embedding model in P2.
+  embedding: "text-embedding-004",
+  "duplicate-detect": "gemini-2.5-flash",
 };
 
 export function getModelForTask(task: AiTask): string {

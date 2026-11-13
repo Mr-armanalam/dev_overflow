@@ -21,12 +21,22 @@ import Image from "next/image";
 import { createAnswer } from "@/lib/actions/answer.action";
 import { recordAiFeedback } from "@/lib/actions/ai.action";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import ParseHTML from "../shared/ParseHTML";
 import { renderAiMarkdown } from "@/lib/ai/markdown";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 
 interface Props {
   questionId: string;
+}
+
+/** One RAG source, from the `x-ai-sources` response header of
+ *  /api/ai/draft. `n` matches the [n] citation markers in the draft. */
+interface AiSource {
+  n: number;
+  questionId: string;
+  title: string;
+  score: number;
 }
 
 // NOTE: the author is derived from the Clerk session inside
@@ -51,6 +61,7 @@ const Answer = ({ questionId }: Props) => {
   const [aiAssisted, setAiAssisted] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiUsageLogId, setAiUsageLogId] = useState<string | null>(null);
+  const [aiSources, setAiSources] = useState<AiSource[]>([]);
   const [aiFeedback, setAiFeedback] = useState<
     "helpful" | "not_helpful" | null
   >(null);
@@ -93,6 +104,7 @@ const Answer = ({ questionId }: Props) => {
     setAiAssisted(false);
     setAiError(null);
     setAiUsageLogId(null);
+    setAiSources([]);
     setAiFeedback(null);
   };
 
@@ -129,6 +141,7 @@ const Answer = ({ questionId }: Props) => {
     setAiDraftInserted(false);
     setAiFeedback(null);
     setAiUsageLogId(null);
+    setAiSources([]);
     setShowAiPanel(true);
 
     try {
@@ -150,6 +163,32 @@ const Answer = ({ questionId }: Props) => {
       const usageLogId = response.headers.get("x-ai-usage-log-id");
       if (usageLogId) {
         setAiUsageLogId(usageLogId);
+      }
+
+      // RAG sources (P2): URI-encoded JSON in the `x-ai-sources`
+      // header; the [n] numbers match the citation markers in the draft.
+      const sourcesHeader = response.headers.get("x-ai-sources");
+      if (sourcesHeader) {
+        try {
+          const parsed: unknown = JSON.parse(
+            decodeURIComponent(sourcesHeader)
+          );
+          if (Array.isArray(parsed)) {
+            setAiSources(
+              parsed.filter(
+                (item): item is AiSource =>
+                  typeof item === "object" &&
+                  item !== null &&
+                  typeof (item as AiSource).n === "number" &&
+                  typeof (item as AiSource).questionId === "string" &&
+                  typeof (item as AiSource).title === "string"
+              )
+            );
+          }
+        } catch {
+          // A malformed header must not take the draft away.
+          setAiSources([]);
+        }
       }
 
       const reader = response.body?.getReader();
@@ -260,6 +299,25 @@ const Answer = ({ questionId }: Props) => {
           {aiDraftHtml && (
             <div className="mt-3">
               <ParseHTML data={aiDraftHtml} />
+            </div>
+          )}
+          {aiDraftReady && aiSources.length > 0 && (
+            <div className="mt-4">
+              <p className="small-medium text-dark400_light800">Sources</p>
+              <ul className="mt-2 space-y-1">
+                {aiSources.map((source) => (
+                  <li key={source.questionId}>
+                    <Link
+                      href={`/question/${source.questionId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="body-regular text-primary-500 hover:underline"
+                    >
+                      [{source.n}] {source.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
           {aiError && (

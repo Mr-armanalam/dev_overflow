@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable spaced-comment */
 "use server";
-import { FilterQuery } from "mongoose";
+import { FilterQuery, type Types } from "mongoose";
 import Question from "@/database/question.model";
 import Tag from "@/database/tag.model";
 import { connectToDatabase } from "../mongoose";
@@ -13,6 +13,10 @@ import { revalidatePath } from "next/cache";
 import Answer from "@/database/answer.model";
 import Interaction from "@/database/interaction.model";
 import { getAuthenticatedUser, isSameId } from "@/lib/auth";
+import {
+  deleteChunksFor,
+  indexQuestion,
+} from "@/lib/ai/rag/index";
 
 export async function getQuestions(params: GetQuestionsParams) {
   try {
@@ -123,6 +127,11 @@ export async function createQuestion(params: CreateQuestionParams) {
     await User.findByIdAndUpdate(author, { $inc: { reputation: 5 } });
 
     revalidatePath(path);
+
+    // RAG index-on-write (design §5.3): fire-and-forget — indexQuestion
+    // never throws, and a failure is logged to AiUsageLog, so indexing
+    // can never break asking a question.
+    void indexQuestion(question._id, author as Types.ObjectId);
   } catch (error) {
     console.error(error);
     throw error;
@@ -288,6 +297,9 @@ export async function deleteQuestion(params: DeleteQuestionParams) {
     await Interaction.deleteMany({ question: questionId });
     await Tag.updateMany({ question: questionId },{ $pull: { questions: questionId } });
 
+    // RAG: drop the question's chunks (fire-and-forget, never throws).
+    void deleteChunksFor(questionId);
+
     revalidatePath(path);
   } catch (error) {
     console.log(error);
@@ -315,6 +327,9 @@ export async function deleteAnswer(params: DeleteAnswerParams) {
     await Question.updateMany({ _id: answer.question },{ $pull: { answers: answerId } });
     await Interaction.deleteMany({ answer: answerId });
 
+    // RAG: drop this answer's chunk (fire-and-forget, never throws).
+    void deleteChunksFor(answerId);
+
     revalidatePath(path);
   } catch (error) {
     console.log(error);
@@ -341,6 +356,9 @@ export async function editQuestion(params: EditQuestionParams) {
     question.content = content;
 
     await question.save();
+
+    // RAG: re-embed the edited question (fire-and-forget, never throws).
+    void indexQuestion(questionId, mongoUser._id as Types.ObjectId);
 
     revalidatePath(path);
    

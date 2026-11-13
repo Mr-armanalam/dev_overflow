@@ -11,6 +11,7 @@ import User from "@/database/user.model";
 import Interaction from "@/database/interaction.model";
 import { getAuthenticatedUser, isSameId } from "@/lib/auth";
 import { markAiDraftUsed } from "@/lib/ai/drafts";
+import { indexAnswer } from "@/lib/ai/rag/index";
 
 export async function createAnswer(params: CreateAnswerParams) {
   try {
@@ -56,6 +57,11 @@ export async function createAnswer(params: CreateAnswerParams) {
     }
 
     revalidatePath(path);
+
+    // RAG index-on-write (design §5.3): fire-and-forget — indexAnswer
+    // re-embeds the whole question (a new answer can change the top-3),
+    // never throws, failures are logged to AiUsageLog.
+    void indexAnswer(newAnswer._id, author as Types.ObjectId);
   } catch (error) {    
     console.log(error);
     throw error;

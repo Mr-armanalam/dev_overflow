@@ -29,9 +29,13 @@ export function secondsUntilNextUtcMidnight(): number {
 }
 
 export function dailyBudgetFor(task: AiTask): number {
-  return task === "answer-draft"
-    ? AI_DRAFT_DAILY_BUDGET
-    : AI_TAG_SUGGEST_DAILY_BUDGET;
+  if (task === "answer-draft") return AI_DRAFT_DAILY_BUDGET;
+  if (task === "tag-suggest") return AI_TAG_SUGGEST_DAILY_BUDGET;
+  // "embedding" and "duplicate-detect" are system-side calls, never
+  // user-budget-gated: indexing runs fire-and-forget on write, and the
+  // duplicate check rides on the ask-question flow. They are still
+  // logged to AiUsageLog for observability.
+  return Number.POSITIVE_INFINITY;
 }
 
 export async function countTodayConsumedCalls(
