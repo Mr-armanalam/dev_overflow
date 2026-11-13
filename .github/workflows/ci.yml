@@ -1,0 +1,41 @@
+# Implementation check: typecheck + production build on every PR and
+# every push to main. This is the gate that would have caught the
+# old `{ redirect: { destination } }` return in the question page,
+# which Next 16.4's page-type checking rejects at build time.
+#
+# NOTE: no lint step yet — `next lint` was removed in Next 16 and the
+# repo still uses legacy `.eslintrc.json` (ESLint 8, EOL). Lint joins
+# CI in Wave 4, when the repo moves to ESLint 9 flat config.
+# NOTE: installs need --legacy-peer-deps — @tinymce/tinymce-react@5
+# peers React ^18 || ^17 || ^16, but the repo is on React 19.
+# That resolves only when TinyMCE is upgraded (Wave 3).
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Typecheck + build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Production build
+        run: npm run build
