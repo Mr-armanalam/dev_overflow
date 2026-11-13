@@ -158,8 +158,33 @@ export async function getSavedQuestion(params: GetSavedQuestionsParams) {
   try {
     await connectToDatabase();
 
-    const { clerkId, searchQuery, page = 1, pageSize = 10 } = params;
+    const { clerkId, searchQuery, filter, page = 1, pageSize = 10 } = params;
     const skipAmount = (page - 1) * pageSize;
+
+    // The collections Filter dropdown writes ?filter=; previously the
+    // param was accepted and ignored. NOTE: most_voted / most_answered
+    // sort on array fields, which MongoDB orders by element, not
+    // length — the same pre-existing limitation as getHotQuestions.
+    // most_recent / oldest / most_viewed sort exactly.
+    let savedSort: Record<string, 1 | -1> = { createdAt: -1 };
+    switch (filter) {
+      case "oldest":
+        savedSort = { createdAt: 1 };
+        break;
+      case "most_voted":
+        savedSort = { upvotes: -1 };
+        break;
+      case "most_viewed":
+        savedSort = { views: -1 };
+        break;
+      case "most_answered":
+        savedSort = { answers: -1 };
+        break;
+      case "most_recent":
+      default:
+        savedSort = { createdAt: -1 };
+        break;
+    }
 
     const query: FilterQuery<typeof Question> = searchQuery
       ? { title: { $regex: new RegExp(searchQuery, "i") } }
@@ -169,7 +194,7 @@ export async function getSavedQuestion(params: GetSavedQuestionsParams) {
       path: "saved",
       match: query,
       options: {
-        sort: { createdAt: -1 },
+        sort: savedSort,
         skip: skipAmount,
         limit: pageSize + 1,
       },
@@ -179,13 +204,15 @@ export async function getSavedQuestion(params: GetSavedQuestionsParams) {
       ],
     });
 
-    const isNext = user.saved.length > pageSize;
-
     if (!user) {
       throw new Error("User not found");
     }
 
-    const savedQuestion = user.saved;
+    const isNext = user.saved.length > pageSize;
+
+    // The populate fetched pageSize + 1 rows to probe for a next page;
+    // only return pageSize of them (previously all 11 leaked through).
+    const savedQuestion = user.saved.slice(0, pageSize);
 
     return { questions: savedQuestion, isNext };
   } catch (error) {
@@ -239,12 +266,16 @@ export async function getUserInfo(params: GetUserByIdParams) {
         },
       },
     ]);
-    const [questionViews] = await Answer.aggregate([
+    // Views live on questions, not answers (the Answer collection has
+    // no views field), and the criteria below reads totalViews — the
+    // previous pipeline grouped under totalUpvotes, so the badge was
+    // always 0.
+    const [questionViews] = await Question.aggregate([
       { $match: { author: user._id } },
       {
         $group: {
           _id: null,
-          totalUpvotes: { $sum: "$views" },
+          totalViews: { $sum: "$views" },
         },
       },
     ]);
