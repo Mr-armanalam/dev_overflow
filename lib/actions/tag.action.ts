@@ -10,7 +10,7 @@ import Question from "@/database/question.model";
 
 export async function getTopInteractedTags(params: GetTopInteractedTagsParams) {
     try {
-        connectToDatabase();
+        await connectToDatabase();
 
         // const { userId, limit = 3 } = params;
         const { userId } = params;
@@ -32,7 +32,7 @@ export async function getTopInteractedTags(params: GetTopInteractedTagsParams) {
 
 export async function getAllTags(params: GetAllTagsParams) {
     try {
-        connectToDatabase();
+        await connectToDatabase();
 
         const { searchQuery, filter, page = 1, pageSize = 10 } = params;
         const skipAmount = (page - 1) * pageSize;
@@ -122,7 +122,7 @@ export async function getQuesionsByTagId(params: GetQuestionsByTagIdParams) {
 
 export async function getTopPopularTags() {
     try {
-        connectToDatabase();
+        await connectToDatabase();
 
         const PopularTags = await Tag.aggregate([
             { $project: { name: 1, numberOfQuestions: { $size: "$questions"}}},

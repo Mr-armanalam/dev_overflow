@@ -20,14 +20,16 @@ import { Button } from "../ui/button";
 import Image from "next/image";
 import { createAnswer } from "@/lib/actions/answer.action";
 import { usePathname } from "next/navigation";
+import DOMPurify from "isomorphic-dompurify";
 
 interface Props {
   question: string;
   questionId: string;
-  authorId: string;
 }
 
-const Answer = ({ question, questionId, authorId }: Props) => {
+// NOTE: the author is derived from the Clerk session inside
+// createAnswer — the form no longer sends a user id.
+const Answer = ({ question, questionId }: Props) => {
   const pathname = usePathname();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmittingAI, setIsSubmittingAI] = useState(false);
@@ -47,7 +49,6 @@ const Answer = ({ question, questionId, authorId }: Props) => {
     try {
       await createAnswer({
         content: values.answer,
-        author: JSON.parse(authorId),
         question: JSON.parse(questionId),
         path: pathname,
       });
@@ -67,13 +68,14 @@ const Answer = ({ question, questionId, authorId }: Props) => {
   };
 
   const generateAIAnswer = async () => {
-    if (!authorId) return;
-    
     setIsSubmittingAI(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/chatgpt`, {
+      // Relative URL: the previous NEXT_PUBLIC_SERVER_URL variable was
+      // never defined, so this request was built as "undefined/api/chatgpt".
+      const response = await fetch("/api/chatgpt", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({question})
       })
 
@@ -82,9 +84,11 @@ const Answer = ({ question, questionId, authorId }: Props) => {
       ////////////// Convert plain text to HTML format ///////////////////////
       // const formattedAnswer = aiAnswer.reply.replace(/\n/g, '<br />');
 
-      if(editorRef.current) {
+      // Sanitise the AI-generated HTML before it enters the editor —
+      // model output is untrusted content, same as user input.
+      if(editorRef.current && typeof aiAnswer.reply === "string") {
         const editor = editorRef.current as any;
-        editor.setContent(aiAnswer.reply);
+        editor.setContent(DOMPurify.sanitize(aiAnswer.reply));
       }
 
       // toat....

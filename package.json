@@ -30,15 +30,16 @@
     "eslint-plugin-tailwindcss": "^3.17.5",
     "fs-extra": "^11.2.0",
     "html-react-parser": "^5.1.18",
+    "isomorphic-dompurify": "^4.7.0",
     "lucide-react": "^0.454.0",
     "mongodb": "^6.10.0",
     "mongoose": "^8.8.0",
-    "next": "16.1.6",
+    "next": "^16.4.6",
     "prettier": "^3.3.3",
-    "prismjs": "^1.29.0",
+    "prismjs": "^1.30.0",
     "query-string": "^9.1.1",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "react-hook-form": "^7.53.1",
     "svix": "^1.37.0",
     "tailwind-merge": "^2.5.4",
@@ -49,10 +50,10 @@
   "devDependencies": {
     "@types/node": "^20",
     "@types/prismjs": "^1.26.5",
-    "@types/react": "19.2.13",
-    "@types/react-dom": "19.2.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "eslint": "^8.57.1",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "^16.4.6",
     "eslint-plugin-n": "^17.13.1",
     "eslint-plugin-promise": "^7.1.0",
     "postcss": "^8",
@@ -68,7 +69,7 @@
   "author": "",
   "license": "ISC",
   "overrides": {
-    "@types/react": "19.2.13",
-    "@types/react-dom": "19.2.3"
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
   }
 }

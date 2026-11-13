@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { formatAIGeneratedText } from "@/lib/utils";
@@ -7,8 +6,16 @@ export const POST = async (request: Request) => {
   const { question } = await request.json();
 
   try {
-    const apikey: any = process.env.NEXT_PUBLIC_GENERATIVE_AI_API_KEY;
-    console.log(apikey);
+    // Server-only variable: never expose the Gemini key to the browser
+    // via a NEXT_PUBLIC_* variable, and never log it.
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "GEMINI_API_KEY is not configured" },
+        { status: 500 },
+      );
+    }
 
     // const response = await fetch("https://api.llama.com/v1/endpoint", {
     //   method: "POST",
@@ -38,7 +45,7 @@ export const POST = async (request: Request) => {
     // }
     // const responseData = await response.json();
 
-    const genAI = new GoogleGenerativeAI(apikey);
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = question;
@@ -48,7 +55,8 @@ export const POST = async (request: Request) => {
     const reply = await formatAIGeneratedText(responseData)
 
     return NextResponse.json({reply});
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message });
   }
 };

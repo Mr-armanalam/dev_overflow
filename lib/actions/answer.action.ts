@@ -8,12 +8,17 @@ import Question from "@/database/question.model";
 import { revalidatePath } from "next/cache";
 import User from "@/database/user.model";
 import Interaction from "@/database/interaction.model";
+import { getAuthenticatedUser, isSameId } from "@/lib/auth";
 
 export async function createAnswer(params: CreateAnswerParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
-    const { content, author, question, path } = params;
+    // The author is always the signed-in user — never a client-supplied id.
+    const mongoUser = await getAuthenticatedUser();
+    const author = mongoUser._id;
+
+    const { content, question, path } = params;
     // const newAnswer = new Answer({ content, author, question });
 
     const newAnswer = await Answer.create({ content, author, question });
@@ -42,7 +47,7 @@ export async function createAnswer(params: CreateAnswerParams) {
 
 export async function getAnswers(params: GetAnswersParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
     const { questionId, sortBy, page = 1, pageSize = 10 } = params;  
     const skipAmount = (page - 1) * pageSize;
@@ -86,9 +91,23 @@ export async function getAnswers(params: GetAnswersParams) {
 
 export async function upvoteAnswer(params: AnswerVoteParams) {
   try {
-      connectToDatabase();
+      await connectToDatabase();
 
-      const { answerId, userId, hasupVoted, hasdownVoted, path } = params;
+      const mongoUser = await getAuthenticatedUser();
+      const userId = mongoUser._id;
+
+      const { answerId, hasupVoted, hasdownVoted, path } = params;
+
+      // Load first so the self-vote check runs BEFORE any write.
+      const existingAnswer = await Answer.findById(answerId);
+
+      if(!existingAnswer) {
+        throw new Error('Answer not found');
+      }
+
+      if (isSameId(existingAnswer.author, userId)) {
+        throw new Error("You cannot vote on your own answer");
+      }
 
       let updateQuery = {};
 
@@ -130,9 +149,23 @@ export async function upvoteAnswer(params: AnswerVoteParams) {
 
 export async function downvoteAnswer(params: AnswerVoteParams) {
   try {
-      connectToDatabase();
+      await connectToDatabase();
 
-      const { answerId, userId, hasupVoted, hasdownVoted, path } = params;
+      const mongoUser = await getAuthenticatedUser();
+      const userId = mongoUser._id;
+
+      const { answerId, hasupVoted, hasdownVoted, path } = params;
+
+      // Load first so the self-vote check runs BEFORE any write.
+      const existingAnswer = await Answer.findById(answerId);
+
+      if(!existingAnswer) {
+        throw new Error('Answer not found');
+      }
+
+      if (isSameId(existingAnswer.author, userId)) {
+        throw new Error("You cannot vote on your own answer");
+      }
 
       let updateQuery = {};
 

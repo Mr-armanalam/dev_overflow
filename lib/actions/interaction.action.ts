@@ -13,22 +13,27 @@ export async function viewQuestion (params: ViewQuestionParams) {
 
         const { questionId, userId} = params;
 
-        /////////// update view count for the question //////////////
-
-        await Question.findByIdAndUpdate(questionId, { $inc: {views: 1}});
-
+        // A view is counted at most once per signed-in user. Check the
+        // dedup record BEFORE incrementing — previously the $inc ran
+        // first, so every page load inflated the count. Anonymous
+        // visitors are not counted (callers only invoke this for
+        // signed-in users, once per question-page load).
         if (userId) {
             const existingInteraction = await Interaction.findOne({ user: userId, action: 'view', question: questionId });
 
-            if(existingInteraction) return console.log('User has already viewd.')
-            
-                //////////// create interaction //////////
+            if(existingInteraction) return;
+
+            //////////// create interaction //////////
 
             await Interaction.create({
                 user: userId,
                 action: 'view',
                 question: questionId,
             })
+
+            /////////// update view count for the question //////////////
+
+            await Question.findByIdAndUpdate(questionId, { $inc: {views: 1}});
         }
         
     } catch (error) {

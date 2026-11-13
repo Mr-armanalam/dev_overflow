@@ -12,7 +12,8 @@ import Pagination from "./Pagination";
 
 interface Props {
   questionId: string;
-  userId: string;
+  // Undefined for logged-out visitors; Votes prompts them to log in.
+  userId?: string;
   totalAnswers: number;
   page?: string | string[];
   filter?: string | string[];
@@ -70,7 +71,7 @@ const AllAnswers = async ({
                   <Votes
                     type="Answer"
                     itemId={JSON.stringify(answer._id)}
-                    userId={JSON.stringify(userId)} //////////// for findig current user ///////////////////
+                    userId={userId ? JSON.stringify(userId) : undefined} //////////// for findig current user ///////////////////
                     upvotes={answer.upvotes.length}
                     hasupVoted={answer.upvotes.includes(userId)}
                     downvotes={answer.downvotes.length}
