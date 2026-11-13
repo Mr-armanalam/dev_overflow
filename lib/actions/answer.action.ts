@@ -2,6 +2,7 @@
 "use server";
 
 import Answer from "@/database/answer.model";
+import type { Types } from "mongoose";
 import { connectToDatabase } from "../mongoose";
 import { AnswerVoteParams, CreateAnswerParams, GetAnswersParams } from "./shared.types";
 import Question from "@/database/question.model";
@@ -9,6 +10,7 @@ import { revalidatePath } from "next/cache";
 import User from "@/database/user.model";
 import Interaction from "@/database/interaction.model";
 import { getAuthenticatedUser, isSameId } from "@/lib/auth";
+import { markAiDraftUsed } from "@/lib/ai/drafts";
 
 export async function createAnswer(params: CreateAnswerParams) {
   try {
@@ -18,10 +20,15 @@ export async function createAnswer(params: CreateAnswerParams) {
     const mongoUser = await getAuthenticatedUser();
     const author = mongoUser._id;
 
-    const { content, question, path } = params;
+    const { content, question, path, aiAssisted = false } = params;
     // const newAnswer = new Answer({ content, author, question });
 
-    const newAnswer = await Answer.create({ content, author, question });
+    const newAnswer = await Answer.create({
+      content,
+      author,
+      question,
+      aiAssisted,
+    });
 
     // Add the answer to the question's answer array
     const questionObject = await Question.findByIdAndUpdate(question, {
@@ -36,7 +43,17 @@ export async function createAnswer(params: CreateAnswerParams) {
       tags: questionObject.tags
     });
 
-    await User.findByIdAndUpdate(author, { $inc: { reputation: 10 }})
+    // Arman's decision (13 Nov 2026): AI-assisted answers earn NO
+    // reputation — they carry an "AI-assisted" badge instead. Only
+    // human-written answers get +10.
+    if (!aiAssisted) {
+      await User.findByIdAndUpdate(author, { $inc: { reputation: 10 } });
+    } else {
+      await markAiDraftUsed({
+        userId: author as Types.ObjectId,
+        questionId: question,
+      });
+    }
 
     revalidatePath(path);
   } catch (error) {    

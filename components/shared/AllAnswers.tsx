@@ -62,6 +62,19 @@ const AllAnswers = async ({
                       {answer.author.name}
                     </p>
 
+                    {answer.aiAssisted && (
+                      <span className="ml-0.5 mt-0.5 flex items-center gap-1 rounded-md bg-primary-500/10 px-2 py-0.5 text-xs font-medium text-primary-500">
+                        <Image
+                          src={"/assets/icons/stars.svg"}
+                          alt="AI-assisted"
+                          width={12}
+                          height={12}
+                          className="object-contain"
+                        />
+                        AI-assisted
+                      </span>
+                    )}
+
                     <p className="small-regular text-light400_light500 ml-0.5 mt-0.5 line-clamp-1">
                       answered {getTimestamp(answer.createdAt)}
                     </p>

@@ -35,6 +35,9 @@ const Question = ({type, questionDetails}: Props) => {
   const editorRef = useRef(null);
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
+  const [isSuggestingTags, setIsSuggestingTags] = useState(false);
+  const [tagSuggestError, setTagSuggestError] = useState<string | null>(null);
   const pathname = usePathname();
 
   const parsedQuestionDetails = questionDetails && JSON.parse(questionDetails || '');
@@ -114,6 +117,57 @@ const Question = ({type, questionDetails}: Props) => {
   const handleTagRemove = (tag: string, field: any) => {
     const newTags = field.value.filter((t: string) => t !== tag);
     form.setValue("tags", newTags);
+  };
+
+  // Suggested tags are never auto-applied: the user confirms each chip.
+  const stripHtml = (html: string): string =>
+    html
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const suggestTags = async () => {
+    const title = form.getValues("title")?.trim() ?? "";
+    const body = stripHtml(form.getValues("explanation") ?? "");
+    if (title.length < 5 || body.length < 20) {
+      setTagSuggestError("Add a title and a short description first.");
+      return;
+    }
+    setIsSuggestingTags(true);
+    setTagSuggestError(null);
+    try {
+      const response = await fetch("/api/ai/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, body }),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (!response.ok) {
+        setTagSuggestError(
+          (data as { error?: string } | null)?.error ??
+            "Tag suggestion failed. Please try again."
+        );
+        return;
+      }
+      const tags = (data as { tags?: unknown } | null)?.tags;
+      setSuggestedTags(
+        Array.isArray(tags)
+          ? tags.filter((t): t is string => typeof t === "string")
+          : []
+      );
+    } catch (error) {
+      console.log(error);
+      setTagSuggestError("Tag suggestion failed. Please try again.");
+    } finally {
+      setIsSuggestingTags(false);
+    }
+  };
+
+  const addSuggestedTag = (tag: string, field: { value: string[] }) => {
+    if (field.value.length >= 3 || field.value.includes(tag)) return;
+    form.setValue("tags", [...field.value, tag]);
+    form.clearErrors("tags");
+    setSuggestedTags((prev) => prev.filter((t) => t !== tag));
   };
 
   return (
@@ -226,6 +280,44 @@ const Question = ({type, questionDetails}: Props) => {
                           
                         </Badge>
                       ))}
+                    </div>
+                  )}
+
+                  {type !== 'Edit' && (
+                    <div className="mt-2.5">
+                      <button
+                        type="button"
+                        onClick={suggestTags}
+                        disabled={isSuggestingTags}
+                        className="btn light-border-2 flex items-center gap-1.5 rounded-md px-3 py-2 text-primary-500 shadow-none dark:text-primary-500"
+                      >
+                        <Image
+                          src={"/assets/icons/stars.svg"}
+                          alt="star"
+                          width={12}
+                          height={12}
+                          className="object-contain"
+                        />
+                        {isSuggestingTags ? "Suggesting…" : "Suggest tags"}
+                      </button>
+                      {suggestedTags.length > 0 && (
+                        <div className="flex-start mt-2.5 gap-2.5">
+                          {suggestedTags.map((tag) => (
+                            <Badge
+                              key={tag}
+                              className="subtle-medium background-light800_dark300 text-light400_light500 flex cursor-pointer items-center justify-center gap-2 rounded-md border-none px-4 py-2 capitalize"
+                              onClick={() => addSuggestedTag(tag, field)}
+                            >
+                              + {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      {tagSuggestError && (
+                        <p className="body-regular mt-2 text-red-500">
+                          {tagSuggestError}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
