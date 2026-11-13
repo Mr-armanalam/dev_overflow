@@ -15,6 +15,10 @@ export const AI_MODEL_FOR_TASK: Record<AiTask, string> = {
   // text-embedding-004 — the only embedding model in P2.
   embedding: "text-embedding-004",
   "duplicate-detect": "gemini-2.5-flash",
+  // MCP tool calls are not provider calls (read-only DB/RAG calls),
+  // so there is no model to route to. "none" keeps the record total
+  // over AiTask; getModelForTask("mcp") is never called.
+  mcp: "none",
 };
 
 export function getModelForTask(task: AiTask): string {

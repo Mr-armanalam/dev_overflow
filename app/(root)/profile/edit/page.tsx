@@ -1,4 +1,5 @@
 import Profile from '@/components/forms/Profile';
+import ApiKeysManager from '@/components/shared/ApiKeysManager';
 import { getUserById } from '@/lib/actions/user.action';
 // import { ParamsProps } from '@/types';
 import { auth } from '@clerk/nextjs/server'
@@ -22,6 +23,8 @@ const Page = async () => {
           user = {JSON.stringify(mongoUser)}
         />
       </div>
+
+      <ApiKeysManager />
     </>
   )
 }
