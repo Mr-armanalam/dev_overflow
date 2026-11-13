@@ -7,6 +7,7 @@ import {
   deleteUser,
   updateUser,
 } from "@/lib/actions/user-sync";
+import { roleFromPublicMetadata } from "@/lib/auth/permissions";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
   const eventType = evt.type;
   // console.log(eventType);
   if(eventType === 'user.created'){
-    const {id, email_addresses, image_url, username, first_name, last_name} = evt.data;
+    const {id, email_addresses, image_url, username, first_name, last_name, public_metadata} = evt.data;
 
     // Create a new user in your database
     // const mongoUser =
@@ -68,13 +69,16 @@ export async function POST(req: Request) {
         username: username!,
         email: email_addresses[0].email_address,
         picture: image_url,
+        // RBAC (design §7.2): the Clerk publicMetadata.role is the
+        // source of truth; an absent/invalid value is a plain user.
+        role: roleFromPublicMetadata(public_metadata),
     })
 
     return NextResponse.json({message: 'OK', username: username})
   }
   
   else if(eventType === 'user.updated'){
-    const {id, email_addresses, image_url, username, first_name, last_name} = evt.data;
+    const {id, email_addresses, image_url, username, first_name, last_name, public_metadata} = evt.data;
 
     // Create a new user in your database
     // const mongoUser = 
@@ -85,6 +89,9 @@ export async function POST(req: Request) {
             username: username!,
             email: email_addresses[0].email_address,
             picture: image_url,
+            // RBAC (design §7.2): role changes in Clerk Dashboard
+            // (publicMetadata.role) flow through on user.updated.
+            role: roleFromPublicMetadata(public_metadata),
         },
         path: `/profile/${id}`
         

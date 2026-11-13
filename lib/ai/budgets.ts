@@ -12,8 +12,29 @@ import AiUsageLog, { type AiTask } from "@/database/ai-usage-log.model";
 import { connectToDatabase } from "@/lib/mongoose";
 import {
   AI_DRAFT_DAILY_BUDGET,
+  AI_DRAFT_MIN_ACCOUNT_AGE_MS,
   AI_TAG_SUGGEST_DAILY_BUDGET,
 } from "./limits";
+
+/**
+ * Minimum-reputation rule for AI drafts (design §8.1): the call is
+ * allowed when the account is at least 24 h old OR reputation is
+ * >= 0. Only a brand-new account with negative reputation is blocked.
+ * P1 did not implement this check; P3 adds it at the design
+ * threshold — the threshold itself is unchanged from the design.
+ */
+export function isEligibleForAiDraft(user: {
+  reputation?: number;
+  joinedAt?: Date;
+}): boolean {
+  if ((user.reputation ?? 0) >= 0) {
+    return true;
+  }
+  const joinedAtMs = user.joinedAt
+    ? new Date(user.joinedAt).getTime()
+    : 0;
+  return Date.now() - joinedAtMs >= AI_DRAFT_MIN_ACCOUNT_AGE_MS;
+}
 
 export function startOfTodayUtc(): Date {
   const now = new Date();
@@ -47,6 +68,9 @@ export async function countTodayConsumedCalls(
     userId,
     task,
     status: { $in: ["success", "flagged"] },
+    // Cache hits consumed no provider call (P3), so they never count
+    // toward the daily budget.
+    cacheHit: false,
     createdAt: { $gte: startOfTodayUtc() },
   });
 }

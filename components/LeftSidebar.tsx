@@ -7,11 +7,38 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { SignedOut, useAuth } from "@clerk/nextjs";
 import { Button } from "./ui/button";
+import { useCan } from "@/lib/auth/use-permissions";
 
 const LeftSidebar = () => {
   const {userId} = useAuth();
   // console.log(userId);
-  
+
+  // Admin UI gating only — the pages themselves enforce the role
+  // server-side (lib/auth/server-permissions.ts); hiding a link here
+  // never grants access on its own.
+  const canViewAdminAi = useCan("ai:admin:dashboard");
+  const canReviewDuplicates = useCan("ai:duplicate:confirm");
+  const links = [
+    ...sidebarLinks,
+    ...(canViewAdminAi
+      ? [
+          {
+            imgURL: "/assets/icons/stars.svg",
+            route: "/admin/ai",
+            label: "AI Usage",
+          },
+        ]
+      : []),
+    ...(canReviewDuplicates
+      ? [
+          {
+            imgURL: "/assets/icons/question.svg",
+            route: "/admin/duplicates",
+            label: "Duplicates",
+          },
+        ]
+      : []),
+  ];
   const pathname = usePathname();
   return (
     <section
@@ -19,7 +46,7 @@ const LeftSidebar = () => {
      justify-between overflow-y-auto border-r p-6 pt-36 shadow-light-300 dark:shadow-none max-sm:hidden lg:w-[266px]"
     >
       <div className="flex flex-1 flex-col gap-6">
-        {sidebarLinks.map((item) => {
+        {links.map((item) => {
           const isActive =
             (pathname.includes(item.route) && item.route.length > 1) ||
             pathname === item.route;

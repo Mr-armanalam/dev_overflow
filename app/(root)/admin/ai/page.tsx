@@ -4,16 +4,15 @@
  * Shows today's AI calls: calls/day, cost/day, p50/p95 latency,
  * cache hit rate, error rate by provider, plus the most recent calls.
  *
- * LIMITATION (P1): this page is sign-in-gated ONLY. No roles exist yet
- * — RBAC (admin/moderator roles, permissions.ts) lands in P3. Any
- * signed-in user can view this page until then; do not treat it as
- * an admin-only page. Cache hit rate is 0% until the P3 cache lands.
+ * Admin-only (P3 RBAC): `requirePermissionForPage("ai:admin:dashboard")`
+ * redirects signed-out users to sign-in and 404s for signed-in users
+ * without the admin role. Cache hit rate is real since the P3 cache
+ * landed (0% until Upstash env vars are set — see docs/upstash-setup.md).
  */
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
 import { connectToDatabase } from "@/lib/mongoose";
 import AiUsageLog from "@/database/ai-usage-log.model";
 import { startOfTodayUtc } from "@/lib/ai/budgets";
+import { requirePermissionForPage } from "@/lib/auth/server-permissions";
 
 function percentile(values: number[], p: number): number {
   if (values.length === 0) return 0;
@@ -34,10 +33,8 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const AdminAiPage = async () => {
-  const { userId } = await auth();
-  if (!userId) {
-    redirect("/sign-in");
-  }
+  // Admin-only: redirects to sign-in when signed out, 404s otherwise.
+  await requirePermissionForPage("ai:admin:dashboard");
 
   await connectToDatabase();
   const since = startOfTodayUtc();
@@ -76,8 +73,7 @@ const AdminAiPage = async () => {
       <h1 className="h1-bold text-dark100_light900">AI Usage</h1>
       <p className="body-regular mt-2 text-light-500">
         Today&apos;s AI calls (UTC day). Costs are approximate — see the
-        price table in lib/ai/pricing.ts. Sign-in only in P1; role-based
-        admin access lands with RBAC in P3.
+        price table in lib/ai/pricing.ts. Admin-only page (RBAC, P3).
       </p>
 
       <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-3">
@@ -103,7 +99,7 @@ const AdminAiPage = async () => {
             {cacheHitRate.toFixed(1)}%
           </p>
           <p className="small-regular text-light-500">
-            No cache in P1 — lands in P3.
+            0% until Upstash env vars are set — see docs/upstash-setup.md.
           </p>
         </div>
         <div className="background-light900_dark300 light-border rounded-md border p-4">

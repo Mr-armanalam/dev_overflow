@@ -20,6 +20,11 @@ export interface CreateUsageLogInput {
   task: AiTask;
   status?: AiUsageStatus;
   errorCode?: string;
+  /** P3: cache-hit rows (no provider call, never budget-counted). */
+  cacheHit?: boolean;
+  inputTokens?: number;
+  outputTokens?: number;
+  latencyMs?: number;
 }
 
 export async function createUsageLog(
@@ -36,6 +41,10 @@ export async function createUsageLog(
     task: input.task,
     status: input.status ?? "pending",
     errorCode: input.errorCode,
+    cacheHit: input.cacheHit ?? false,
+    inputTokens: input.inputTokens ?? 0,
+    outputTokens: input.outputTokens ?? 0,
+    latencyMs: input.latencyMs ?? 0,
   });
 }
 

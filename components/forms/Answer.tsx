@@ -65,6 +65,18 @@ const Answer = ({ questionId }: Props) => {
   const [aiFeedback, setAiFeedback] = useState<
     "helpful" | "not_helpful" | null
   >(null);
+  // P3 cache + degraded mode: a note when the draft came from the
+  // cache ("Served from cache" / "From a similar question"), and the
+  // similar-questions list the endpoint serves with a degraded error
+  // instead of a bare failure.
+  const [aiCacheNote, setAiCacheNote] = useState<string | null>(null);
+  const [aiCacheSimilar, setAiCacheSimilar] = useState<{
+    questionId: string;
+    title: string;
+  } | null>(null);
+  const [aiDegradedSimilar, setAiDegradedSimilar] = useState<
+    Array<{ questionId: string; title: string }>
+  >([]);
   const aiRenderSeq = React.useRef(0);
 
   const { mode } = useTheme();
@@ -106,6 +118,9 @@ const Answer = ({ questionId }: Props) => {
     setAiUsageLogId(null);
     setAiSources([]);
     setAiFeedback(null);
+    setAiCacheNote(null);
+    setAiCacheSimilar(null);
+    setAiDegradedSimilar([]);
   };
 
   const handleCreateAnswer = async (values: z.infer<typeof AnserSchema>) => {
@@ -142,6 +157,9 @@ const Answer = ({ questionId }: Props) => {
     setAiFeedback(null);
     setAiUsageLogId(null);
     setAiSources([]);
+    setAiCacheNote(null);
+    setAiCacheSimilar(null);
+    setAiDegradedSimilar([]);
     setShowAiPanel(true);
 
     try {
@@ -157,12 +175,48 @@ const Answer = ({ questionId }: Props) => {
           (data as { error?: string } | null)?.error ??
           "AI draft failed. Please try again.";
         setAiError(message);
+        // Degraded mode (P3): the endpoint serves similar questions
+        // with the error instead of a bare failure.
+        const similar = (data as { similarQuestions?: unknown } | null)
+          ?.similarQuestions;
+        if (Array.isArray(similar)) {
+          setAiDegradedSimilar(
+            similar.filter(
+              (item): item is { questionId: string; title: string } =>
+                typeof item === "object" &&
+                item !== null &&
+                typeof (item as { questionId?: unknown }).questionId ===
+                  "string" &&
+                typeof (item as { title?: unknown }).title === "string"
+            )
+          );
+        }
         return;
       }
 
       const usageLogId = response.headers.get("x-ai-usage-log-id");
       if (usageLogId) {
         setAiUsageLogId(usageLogId);
+      }
+
+      // Cache labels (P3): `x-ai-cache: exact` means this draft was
+      // served from the cache with no provider call; `semantic` means
+      // it is the stored draft of a near-identical question.
+      const cacheKind = response.headers.get("x-ai-cache");
+      if (cacheKind === "exact") {
+        setAiCacheNote("Served from cache — no AI call used.");
+      } else if (cacheKind === "semantic") {
+        const similarId = response.headers.get("x-ai-similar-question-id");
+        const similarTitle = response.headers.get(
+          "x-ai-similar-question-title"
+        );
+        setAiCacheNote("From a similar question");
+        if (similarId && similarTitle) {
+          setAiCacheSimilar({
+            questionId: similarId,
+            title: similarTitle,
+          });
+        }
       }
 
       // RAG sources (P2): URI-encoded JSON in the `x-ai-sources`
@@ -291,6 +345,24 @@ const Answer = ({ questionId }: Props) => {
             </span>
           </div>
 
+          {aiCacheNote && (
+            <p className="small-regular mt-3 text-light-500">
+              {aiCacheNote}
+              {aiCacheSimilar && (
+                <>
+                  {": "}
+                  <Link
+                    href={`/question/${aiCacheSimilar.questionId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-500 hover:underline"
+                  >
+                    {aiCacheSimilar.title}
+                  </Link>
+                </>
+              )}
+            </p>
+          )}
           {isSubmittingAI && !aiDraftMarkdown && (
             <p className="body-regular mt-3 text-light-500">
               Generating draft…
@@ -322,6 +394,27 @@ const Answer = ({ questionId }: Props) => {
           )}
           {aiError && (
             <p className="body-regular mt-3 text-red-500">{aiError}</p>
+          )}
+          {aiError && aiDegradedSimilar.length > 0 && (
+            <div className="mt-4">
+              <p className="small-medium text-dark400_light800">
+                Similar questions you can read while AI is unavailable
+              </p>
+              <ul className="mt-2 space-y-1">
+                {aiDegradedSimilar.map((similar) => (
+                  <li key={similar.questionId}>
+                    <Link
+                      href={`/question/${similar.questionId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="body-regular text-primary-500 hover:underline"
+                    >
+                      {similar.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           <div className="mt-4 flex flex-wrap items-center gap-2">

@@ -83,6 +83,71 @@ export function detectPromptInjection(text: string): boolean {
 }
 
 /**
+ * Keyword / regex spam list (design §8.1, P3). Same treatment as the
+ * injection screen: flag + log, never silently rewrite, call proceeds.
+ * This is a cheap heuristic for obvious spam (follower-selling, crypto
+ * giveaways, "earn money fast") — a dedicated moderation call is a
+ * later phase (design §8.1 Phase 2) and is deliberately NOT added here.
+ */
+const SPAM_KEYWORDS = [
+  "buy followers",
+  "buy likes",
+  "buy subscribers",
+  "buy views",
+  "earn money fast",
+  "make money fast",
+  "work from home earn",
+  "crypto giveaway",
+  "double your bitcoin",
+  "double your btc",
+  "double your crypto",
+  "send 0.1 btc",
+  "free iphone",
+  "guaranteed income",
+  "limited time offer",
+  "act now",
+];
+
+const SPAM_PATTERNS: RegExp[] = [
+  // "earn $500/day", "earn 500 dollars a week"
+  /\bearn\s+\$?\d[\d,]*\s*(dollars?|\/day|\/week|\/month)?\b/i,
+  // "double/triple your bitcoin/btc/crypto/money"
+  /\b(double|triple)\s+your\s+(bitcoin|btc|crypto|money)\b/i,
+  // "free iphone/gift card/prize" / "win a ..."
+  /\b(free|win a?)\s+(iphone|gift\s?card|prize|giveaway)\b/i,
+  // "buy/get followers/likes/subscribers/views"
+  /\b(buy|get)\s+(followers|likes|subscribers|views)\b/i,
+  // casino / pharma spam
+  /\b(casino|viagra|cialis)\b/i,
+];
+
+export function detectSpam(text: string): boolean {
+  const lower = text.toLowerCase();
+  if (SPAM_KEYWORDS.some((keyword) => lower.includes(keyword))) {
+    return true;
+  }
+  return SPAM_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+export type InputScreenReason = "prompt-injection" | "spam";
+
+/**
+ * Combined input screen for the AI routes: prompt-injection phrases
+ * plus the spam list. Flagged inputs are logged (status "flagged" on
+ * the AiUsageLog row) and the call still proceeds — never silently
+ * rewritten (design §8.1).
+ */
+export function screenAiInput(text: string): {
+  flagged: boolean;
+  reasons: InputScreenReason[];
+} {
+  const reasons: InputScreenReason[] = [];
+  if (detectPromptInjection(text)) reasons.push("prompt-injection");
+  if (detectSpam(text)) reasons.push("spam");
+  return { flagged: reasons.length > 0, reasons };
+}
+
+/**
  * Best-effort HTML → plain text for TinyMCE question bodies before
  * they go into a prompt. Tag stripping by regex is lossy by design —
  * prompts only need the words, not the markup.

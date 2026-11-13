@@ -18,6 +18,7 @@ import { QuestionSchema } from "@/lib/validation";
 import { Badge } from "../ui/badge";
 import Image from "next/image";
 import { createQuestion, editQuestion } from "@/lib/actions/question.action";
+import { linkDuplicateSuggestionToQuestion } from "@/lib/actions/duplicate-suggestion.action";
 import { usePathname} from "next/navigation";
 import { useRouter } from 'next/navigation'
 import { useTheme } from "@/context/ThemeProvider";
@@ -51,6 +52,8 @@ const Question = ({type, questionDetails}: Props) => {
     title: string;
     confidence: number;
     reason: string;
+    /** Row id in the moderator review queue (P3), when recorded. */
+    suggestionId?: string;
   } | null>(null);
   const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
   const similarSeq = useRef(0);
@@ -133,6 +136,7 @@ const Question = ({type, questionDetails}: Props) => {
                 title: string;
                 confidence: number;
                 reason: string;
+                suggestionId?: string;
               })
             : null
         );
@@ -163,15 +167,31 @@ const Question = ({type, questionDetails}: Props) => {
           content: values.explanation, 
           path: pathname
         })
+        // Link a recorded duplicate suggestion to the edited question
+        // (P3 review queue) — best-effort, never blocks navigation.
+        if (duplicateSuggest?.suggestionId) {
+          await linkDuplicateSuggestionToQuestion({
+            suggestionId: duplicateSuggest.suggestionId,
+            questionId: parsedQuestionDetails?._id,
+          }).catch((error) => console.log(error));
+        }
         router.push(`/question/${parsedQuestionDetails?._id}`);
 
       } else {
-        await createQuestion({
+        const created = await createQuestion({
           title: values.title,
           content: values.explanation,
           tags: values.tags,
           path:pathname
         });
+        // Link a recorded duplicate suggestion to the submitted
+        // question (P3 review queue) — best-effort, never blocks.
+        if (created?.questionId && duplicateSuggest?.suggestionId) {
+          await linkDuplicateSuggestionToQuestion({
+            suggestionId: duplicateSuggest.suggestionId,
+            questionId: created.questionId,
+          }).catch((error) => console.log(error));
+        }
         ///////////// navigate to home page ////////////////  
 
         router.push('/');

@@ -132,6 +132,10 @@ export async function createQuestion(params: CreateQuestionParams) {
     // never throws, and a failure is logged to AiUsageLog, so indexing
     // can never break asking a question.
     void indexQuestion(question._id, author as Types.ObjectId);
+
+    // The id is returned so the ask-question form can link a recorded
+    // AI duplicate suggestion to the submitted question (P3 queue).
+    return { questionId: String(question._id) };
   } catch (error) {
     console.error(error);
     throw error;

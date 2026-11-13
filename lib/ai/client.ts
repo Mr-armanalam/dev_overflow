@@ -17,6 +17,8 @@ import {
   streamText,
   zodSchema,
   type LanguageModelUsage,
+  type TextStreamPart,
+  type ToolSet,
 } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { z } from "zod";
@@ -70,6 +72,15 @@ export interface LlmProvider {
   stream(req: LlmGenerateRequest & {
     onFinish?: (result: LlmStreamResult) => void | Promise<void>;
     onError?: (error: unknown) => void | Promise<void>;
+    /**
+     * Best-effort per-chunk scrub of the streamed text (P3 output
+     * guardrail, defense in depth). Applied to each `text-delta` part
+     * before it reaches the client. A secret split across two chunks
+     * can slip past this — the reliable controls are the input scrub
+     * (secrets never reach the prompt) and the full-text scrub of the
+     * stored draft in the route's onFinish.
+     */
+    scrubTextChunks?: (chunk: string) => string;
   }): Promise<ReturnType<typeof streamText>>;
   /**
    * Embed one or more texts with text-embedding-004 (768-d). Same
@@ -240,6 +251,7 @@ class GeminiProvider implements LlmProvider {
     req: LlmGenerateRequest & {
       onFinish?: (result: LlmStreamResult) => void | Promise<void>;
       onError?: (error: unknown) => void | Promise<void>;
+      scrubTextChunks?: (chunk: string) => string;
     }
   ): Promise<ReturnType<typeof streamText>> {
     const model = this.getModel(req.model);
@@ -260,6 +272,30 @@ class GeminiProvider implements LlmProvider {
           abortSignal: AbortSignal.timeout(
             req.timeoutMs ?? AI_CALL_TIMEOUT_MS
           ),
+          // Per-chunk output scrub (P3). Non-text parts pass through
+          // untouched; text deltas are scrubbed before delivery.
+          experimental_transform: req.scrubTextChunks
+            ? () => {
+                const scrub = req.scrubTextChunks as (
+                  chunk: string
+                ) => string;
+                return new TransformStream<
+                  TextStreamPart<ToolSet>,
+                  TextStreamPart<ToolSet>
+                >({
+                  transform(part, controller) {
+                    if (part.type === "text-delta") {
+                      controller.enqueue({
+                        ...part,
+                        text: scrub(part.text),
+                      });
+                    } else {
+                      controller.enqueue(part);
+                    }
+                  },
+                });
+              }
+            : undefined,
           onFinish: async (event) => {
             await req.onFinish?.({
               text: event.text,
