@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable spaced-comment */
+ 
 "use server";
 import { QueryFilter, type Types } from "mongoose";
 import Question from "@/database/question.model";

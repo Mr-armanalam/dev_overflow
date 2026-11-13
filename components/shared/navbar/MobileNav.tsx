@@ -29,7 +29,7 @@ const NavContent = () => {
               href={item.route}
               className={`${
                 isActive
-                  ? "primary-gradient rounded-lg text-light-900"
+                  ? "rounded-lg text-light-900 primary-gradient"
                   : "text-dark300_light900"
               } flex items-center justify-start gap-4 bg-transparent p-4
                 `}
@@ -64,7 +64,7 @@ const MobileNav = () => {
       </SheetTrigger>
       <SheetContent
         side={"left"}
-        className="background-light900_dark200 border-none"
+        className="border-none background-light900_dark200"
       >
         <SheetTitle>
           <Link href={"/"} className="flex items-center gap-1">
@@ -74,7 +74,7 @@ const MobileNav = () => {
               height={23}
               alt="DevFlow"
             />
-            <p className="h2-bold text-dark100_light900 font-spaceGrotesk ">
+            <p className="font-spaceGrotesk h2-bold text-dark100_light900 ">
               Dev <span className="text-primary-500">Overflow</span>
             </p>
           </Link>
@@ -88,14 +88,14 @@ const MobileNav = () => {
             <div className="flex flex-col gap-3">
               <SheetClose asChild>
                 <Link href={"/sign-in"}>
-                  <Button className="small-medium btn-secondary min-h-[41px] w-full rounded-lg px-4 py-3 shadow-none">
+                  <Button className="min-h-[41px] w-full rounded-lg btn-secondary px-4 py-3 small-medium shadow-none">
                     <span className="primary-text-gradient">Log In</span>
                   </Button>
                 </Link>
               </SheetClose>
               <SheetClose asChild>
                 <Link href={"/sign-up"}>
-                  <Button className="small-medium light-border-2 btn-tertiary text-dark400_light900 min-h-[41px] w-full rounded-lg px-4 py-3 shadow-none">
+                  <Button className="min-h-[41px] w-full rounded-lg light-border-2 btn-tertiary px-4 py-3 small-medium text-dark400_light900 shadow-none">
                     Sign Up
                   </Button>
                 </Link>

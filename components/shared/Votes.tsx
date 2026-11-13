@@ -1,4 +1,4 @@
-/* eslint-disable spaced-comment */
+ 
 'use client'
 import { toast } from '@/hooks/use-toast';
 import { downvoteAnswer, upvoteAnswer } from '@/lib/actions/answer.action';
@@ -192,8 +192,8 @@ const Votes = ({
                     onClick={()=> handleVote('upvote')}
                 />
 
-                <div className='flex-center background-light700_dark400 min-w-[18px] rounded-sm p-1'>
-                    <p className='subtle-medium text-dark400_ligt900'>
+                <div className='flex-center min-w-[18px] rounded-sm background-light700_dark400 p-1'>
+                    <p className='text-dark400_ligt900 subtle-medium'>
                         {formatNumber(upvotes)}
                     </p>
                 </div>
@@ -209,8 +209,8 @@ const Votes = ({
                     onClick={()=> handleVote('downvote')}
                 />
 
-                <div className='flex-center background-light700_dark400 min-w-[18px] rounded-sm p-1'>
-                    <p className='subtle-medium text-dark400_ligt900'>
+                <div className='flex-center min-w-[18px] rounded-sm background-light700_dark400 p-1'>
+                    <p className='text-dark400_ligt900 subtle-medium'>
                         {formatNumber(downvotes)}
                     </p>
                 </div>

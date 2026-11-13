@@ -51,7 +51,7 @@ const Page = async (prop: {searchParams : SearchParams} ) => {
         {result.users.length > 0 ? (
           result.users.map((user) => <UserCard key={user._id} user={user} />)
         ) : (
-          <div className="paragraph-regular text-dark200_light800 mx-auto max-w-4xl text-center ">
+          <div className="mx-auto max-w-4xl text-center paragraph-regular text-dark200_light800 ">
             <p>No users yet</p>
             <Link
               href={"/sign-up"}

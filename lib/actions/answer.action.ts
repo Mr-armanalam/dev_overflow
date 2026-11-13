@@ -1,4 +1,4 @@
-/* eslint-disable spaced-comment */
+ 
 "use server";
 
 import Answer from "@/database/answer.model";

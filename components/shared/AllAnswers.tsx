@@ -1,4 +1,4 @@
-/* eslint-disable spaced-comment */
+ 
 import React from "react";
 import Filter from "./Filter";
 import { AnswerFilters } from "@/constants/filters";
@@ -42,7 +42,7 @@ const AllAnswers = async ({
 
       <div>
         {answer.answers.map((answer) => (
-          <article key={answer._id} className="light-border border-b py-10">
+          <article key={answer._id} className="border-b light-border py-10">
               {/* SPAN ID */}
               <div className="mb-8 flex flex-col-reverse justify-between gap-5 sm:flex-row sm:items-center sm:gap-2">
                 <Link
@@ -63,7 +63,7 @@ const AllAnswers = async ({
                     </p>
 
                     {answer.aiAssisted && (
-                      <span className="ml-0.5 mt-0.5 flex items-center gap-1 rounded-md bg-primary-500/10 px-2 py-0.5 text-xs font-medium text-primary-500">
+                      <span className="mt-0.5 ml-0.5 flex items-center gap-1 rounded-md bg-primary-500/10 px-2 py-0.5 text-xs font-medium text-primary-500">
                         <Image
                           src={"/assets/icons/stars.svg"}
                           alt="AI-assisted"
@@ -75,7 +75,7 @@ const AllAnswers = async ({
                       </span>
                     )}
 
-                    <p className="small-regular text-light400_light500 ml-0.5 mt-0.5 line-clamp-1">
+                    <p className="mt-0.5 ml-0.5 line-clamp-1 small-regular text-light400_light500">
                       answered {getTimestamp(answer.createdAt)}
                     </p>
                   </div>

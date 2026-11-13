@@ -1,5 +1,5 @@
-/* eslint-disable import/no-duplicates */
-/* eslint-disable spaced-comment */
+ 
+ 
 "use client";
 import { deleteAnswer, deleteQuestion } from "@/lib/actions/question.action";
 import Image from "next/image";
