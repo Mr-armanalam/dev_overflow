@@ -89,7 +89,7 @@ export async function getAnswers(params: GetAnswersParams) {
   }
 }
 
-export async function upvoteAnswer(params: AnswerVoteParams) {
+export async function upvoteAnswer(params: AnswerVoteParams): Promise<{ success: boolean; error?: string }> {
   try {
       await connectToDatabase();
 
@@ -106,7 +106,9 @@ export async function upvoteAnswer(params: AnswerVoteParams) {
       }
 
       if (isSameId(existingAnswer.author, userId)) {
-        throw new Error("You cannot vote on your own answer");
+        // Expected user error, not an exception: return it so the
+        // client can show a toast instead of a runtime-error overlay.
+        return { success: false, error: "You cannot vote on your own answer" };
       }
 
       let updateQuery = {};
@@ -140,6 +142,7 @@ export async function upvoteAnswer(params: AnswerVoteParams) {
       })
 
       revalidatePath(path);
+      return { success: true };
 
   } catch (error) {
       console.log(error);
@@ -147,7 +150,7 @@ export async function upvoteAnswer(params: AnswerVoteParams) {
   }
 }
 
-export async function downvoteAnswer(params: AnswerVoteParams) {
+export async function downvoteAnswer(params: AnswerVoteParams): Promise<{ success: boolean; error?: string }> {
   try {
       await connectToDatabase();
 
@@ -164,7 +167,9 @@ export async function downvoteAnswer(params: AnswerVoteParams) {
       }
 
       if (isSameId(existingAnswer.author, userId)) {
-        throw new Error("You cannot vote on your own answer");
+        // Expected user error, not an exception: return it so the
+        // client can show a toast instead of a runtime-error overlay.
+        return { success: false, error: "You cannot vote on your own answer" };
       }
 
       let updateQuery = {};
@@ -198,6 +203,7 @@ export async function downvoteAnswer(params: AnswerVoteParams) {
       })
 
       revalidatePath(path);
+      return { success: true };
 
   } catch (error) {
       console.log(error);

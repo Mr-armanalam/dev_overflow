@@ -72,6 +72,7 @@ const AllAnswers = async ({
                     type="Answer"
                     itemId={JSON.stringify(answer._id)}
                     userId={userId ? JSON.stringify(userId) : undefined} //////////// for findig current user ///////////////////
+                    authorId={JSON.stringify(answer.author._id)}
                     upvotes={answer.upvotes.length}
                     hasupVoted={answer.upvotes.includes(userId)}
                     downvotes={answer.downvotes.length}

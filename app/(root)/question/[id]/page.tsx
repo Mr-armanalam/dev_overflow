@@ -96,6 +96,7 @@ const page = async (props: { params: Params, searchParams: SearchParams}) => {
               type="Question"
               itemId={JSON.stringify(result._id)}
               userId={mongoUser ? JSON.stringify(mongoUser._id) : undefined} //////////// for findig current user ///////////////////
+              authorId={JSON.stringify(result.author._id)}
               upvotes={result.upvotes.length}
               hasupVoted={mongoUser ? result.upvotes.includes(mongoUser._id) : false}
               downvotes={result.downvotes.length}
