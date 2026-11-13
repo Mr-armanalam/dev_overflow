@@ -148,7 +148,7 @@ export async function upvoteAnswer(params: AnswerVoteParams): Promise<{ success:
       }
 
       const answer = await Answer.findByIdAndUpdate(
-        answerId, updateQuery, {new: true}
+        answerId, updateQuery, {returnDocument: 'after'}
       )
 
       if(!answer) {
@@ -209,7 +209,7 @@ export async function downvoteAnswer(params: AnswerVoteParams): Promise<{ succes
       }
 
       const answer = await Answer.findByIdAndUpdate(
-        answerId, updateQuery, {new: true}
+        answerId, updateQuery, {returnDocument: 'after'}
       )
 
       if(!answer) {

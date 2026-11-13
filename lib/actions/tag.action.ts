@@ -5,7 +5,7 @@ import User from "@/database/user.model";
 import { connectToDatabase } from "../mongoose";
 import { GetAllTagsParams, GetQuestionsByTagIdParams, GetTopInteractedTagsParams } from "./shared.types";
 import Tag, { ITag } from "@/database/tag.model";
-import { FilterQuery } from "mongoose";
+import { QueryFilter } from "mongoose";
 import Question from "@/database/question.model";
 
 export async function getTopInteractedTags(params: GetTopInteractedTagsParams) {
@@ -37,7 +37,7 @@ export async function getAllTags(params: GetAllTagsParams) {
         const { searchQuery, filter, page = 1, pageSize = 10 } = params;
         const skipAmount = (page - 1) * pageSize;
 
-        const query: FilterQuery<typeof Tag> = {};
+        const query: QueryFilter<typeof Tag> = {};
 
         if(searchQuery) {
             query.$or = [{name: { $regex: new RegExp(searchQuery, 'i') }}]
@@ -87,7 +87,7 @@ export async function getQuesionsByTagId(params: GetQuestionsByTagIdParams) {
         const { tagId, page=1, pageSize = 10, searchQuery} = params;
         const skipAmount = (page - 1) * pageSize;
 
-        const tagFilter : FilterQuery<ITag> = { _id: tagId}
+        const tagFilter : QueryFilter<ITag> = { _id: tagId}
 
         const tag = await Tag.findOne(tagFilter).populate({
             path: 'questions',

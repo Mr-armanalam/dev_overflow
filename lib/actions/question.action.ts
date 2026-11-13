@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable spaced-comment */
 "use server";
-import { FilterQuery, type Types } from "mongoose";
+import { QueryFilter, type Types } from "mongoose";
 import Question from "@/database/question.model";
 import Tag from "@/database/tag.model";
 import { connectToDatabase } from "../mongoose";
@@ -28,7 +28,7 @@ export async function getQuestions(params: GetQuestionsParams) {
 
     const skipAmount = (page - 1) * pageSize;
 
-    const query : FilterQuery<typeof Question> = {};
+    const query : QueryFilter<typeof Question> = {};
     if (searchQuery) {
       query.$or = [
         { title: { $regex: new RegExp(searchQuery, "i") }},
@@ -106,7 +106,7 @@ export async function createQuestion(params: CreateQuestionParams) {
       const existingTag = await Tag.findOneAndUpdate(
         { name: { $regex: new RegExp(`^${tag}$`, "i") } },
         { $setOnInsert: { name: tag }, $push: { questions: question._id } },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: 'after' }
       );
 
       tagDocuments.push(existingTag._id);
@@ -200,7 +200,7 @@ export async function upvoteQuestion(params: QuestionVoteParams): Promise<{ succ
     }
 
     const question = await Question.findByIdAndUpdate(questionId, updateQuery, {
-      new: true,
+      returnDocument: 'after',
     });
 
     if (!question) {
@@ -254,7 +254,7 @@ export async function downvoteQuestion(params: QuestionVoteParams): Promise<{ su
     }
 
     const question = await Question.findByIdAndUpdate(questionId, updateQuery, {
-      new: true,
+      returnDocument: 'after',
     });
 
     if (!question) {
@@ -417,7 +417,7 @@ export async function getRecommentedQuestions(params: RecommendedParams){
       ...new Set(userTags.map((tag: any) => tag._id)),
     ];
 
-    const query: FilterQuery<typeof Question> = {
+    const query: QueryFilter<typeof Question> = {
       $and: [
         { tags: {$in: distinctUserTagIds}},  /////////// Question with user tags ///////////////
         { author: {$ne: user._id}}, ///////////// Exclude user's own questions ///////////////
