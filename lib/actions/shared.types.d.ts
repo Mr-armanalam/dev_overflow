@@ -1,9 +1,9 @@
 import { IUser } from "@/database/user.model";
-import { Schema } from "mongoose";
 
 export interface CreateAnswerParams {
   content: string;
-  author: string; // User ID
+  // NOTE: no `author` — the author is derived from the Clerk session
+  // inside createAnswer. Never accept it from the client.
   question: string; // Question ID
   path: string;
 }
@@ -15,7 +15,8 @@ export interface GetAnswersParams {
 }
 export interface AnswerVoteParams {
   answerId: string;
-  userId: string;
+  // NOTE: no `userId` — the voter is derived from the Clerk session
+  // inside the vote actions. Never accept it from the client.
   hasupVoted: boolean;
   hasdownVoted: boolean;
   path: string;
@@ -52,7 +53,8 @@ export interface CreateQuestionParams {
   title: string;
   content: string;
   tags: string[];
-  author: Schema.Types.ObjectId | IUser;
+  // NOTE: no `author` — the author is derived from the Clerk session
+  // inside createQuestion. Never accept it from the client.
   path: string;
 }
 export interface GetQuestionByIdParams {
@@ -60,7 +62,8 @@ export interface GetQuestionByIdParams {
 }
 export interface QuestionVoteParams {
   questionId: string;
-  userId: string;
+  // NOTE: no `userId` — the voter is derived from the Clerk session
+  // inside the vote actions. Never accept it from the client.
   hasupVoted: boolean;
   hasdownVoted: boolean;
   path: string;
@@ -113,7 +116,8 @@ export interface UpdateUserParams {
   path: string;
 }
 export interface ToggleSaveQuestionParams {
-  userId: string;
+  // NOTE: no `userId` — the acting user is derived from the Clerk
+  // session inside toggleSaveQuestion. Never accept it from the client.
   questionId: string;
   path: string;
 }

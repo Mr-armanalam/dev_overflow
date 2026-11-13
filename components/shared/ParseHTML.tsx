@@ -3,6 +3,7 @@ import React, { useEffect } from 'react'
 
 import Prism from 'prismjs'
 import parse from 'html-react-parser'
+import DOMPurify from "isomorphic-dompurify"
 
 import "prismjs/components/prism-python";
 import "prismjs/components/prism-java";
@@ -37,7 +38,11 @@ const ParseHTML = ({data}: Props) => {
     }, [])
   return (
     <div className={'markdown w-full min-w-full'}>
-        {parse(data)}
+        {/* Sanitise before parsing: TinyMCE content is user-supplied HTML
+            and may contain <script>, <iframe> or on* event attributes.
+            Without this, stored XSS is possible on every question and
+            answer page. */}
+        {parse(DOMPurify.sanitize(data))}
     </div>
   )
 }

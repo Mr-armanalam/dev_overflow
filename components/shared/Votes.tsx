@@ -2,19 +2,21 @@
 'use client'
 import { toast } from '@/hooks/use-toast';
 import { downvoteAnswer, upvoteAnswer } from '@/lib/actions/answer.action';
-import { viewQuestion } from '@/lib/actions/interaction.action';
 import { downvoteQuestion, upvoteQuestion } from '@/lib/actions/question.action';
 import { toggleSaveQuestion } from '@/lib/actions/user.action';
 import { formatNumber } from '@/lib/utils';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect } from 'react'
+import { usePathname } from 'next/navigation';
+import React from 'react'
 
 
  interface Props {
     type: string;
     itemId: string;
-    userId: string;
+    // Optional: only used for the client-side "please log in" prompt.
+    // The server actions derive the acting user from the Clerk session,
+    // never from this prop.
+    userId?: string;
     upvotes: number;
     hasupVoted: boolean;
     downvotes: number;
@@ -34,11 +36,16 @@ const Votes = ({
 }: Props) => {
 
     const pathname = usePathname();
-    const router = useRouter();
 
     const handleSave = async () => {
+        if(!userId) {
+         return toast({
+            title: 'Please log in',
+            description: 'You must be logged in to perform this action'
+        });;
+        }
+
         await toggleSaveQuestion({
-            userId: JSON.parse(userId),
             questionId: JSON.parse(itemId),
             path: pathname
         })
@@ -60,7 +67,6 @@ const Votes = ({
             if(type === 'Question') {
                 await upvoteQuestion({
                     questionId: JSON.parse(itemId),
-                    userId: JSON.parse(userId),
                     hasupVoted,
                     hasdownVoted,
                     path: pathname
@@ -68,7 +74,6 @@ const Votes = ({
             }else if(type === 'Answer'){
                 await upvoteAnswer({
                     answerId: JSON.parse(itemId),
-                    userId: JSON.parse(userId),
                     hasupVoted,
                     hasdownVoted,
                     path: pathname
@@ -87,7 +92,6 @@ const Votes = ({
             if(type === 'Question') {
                 await downvoteQuestion({
                     questionId: JSON.parse(itemId),
-                    userId: JSON.parse(userId),
                     hasupVoted,
                     hasdownVoted,
                     path: pathname
@@ -95,7 +99,6 @@ const Votes = ({
             }else if(type === 'Answer'){
                 await downvoteAnswer({
                     answerId: JSON.parse(itemId),
-                    userId: JSON.parse(userId),
                     hasupVoted,
                     hasdownVoted,
                     path: pathname
@@ -111,14 +114,10 @@ const Votes = ({
         }
     } 
     
-    useEffect(() => {
-
-        viewQuestion({
-            questionId: JSON.parse(itemId),
-            userId: userId ? JSON.parse(userId) : undefined,
-        })
-
-    },[itemId, userId, pathname, router]);
+    // NOTE: view counting used to live here — it ran once per Votes
+    // instance (once per answer too), inflating the count N+1 per load.
+    // Views are now counted exactly once per question-page load, on the
+    // server, in app/(root)/question/[id]/page.tsx via viewQuestion.
 
   return (
     <div className='flex gap-5'>

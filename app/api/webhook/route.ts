@@ -2,11 +2,17 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { WebhookEvent } from "@clerk/nextjs/server";
-import { createUser, deleteUser, updateUser } from "@/lib/actions/user.action";
+import {
+  createUser,
+  deleteUser,
+  updateUser,
+} from "@/lib/actions/user-sync";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const WEBHOOK_SECRET = process.env.NEXT_PUBLIC_WEBHOOK_SECRET;
+  // Server-only variable: the webhook secret must never be exposed
+  // to the browser via a NEXT_PUBLIC_* variable.
+  const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
 
   if (!WEBHOOK_SECRET) {
     throw new Error(

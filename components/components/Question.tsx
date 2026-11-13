@@ -24,11 +24,12 @@ import { useTheme } from "@/context/ThemeProvider";
 
 interface Props {
   type?: string;
-  mongoUserId: string;
   questionDetails?: string;
 }
 
-const Question = ({type,mongoUserId, questionDetails}: Props) => {
+// NOTE: the author is derived from the Clerk session inside
+// createQuestion — the form no longer sends a user id.
+const Question = ({type, questionDetails}: Props) => {
 
   const { mode } = useTheme(); 
   const editorRef = useRef(null);
@@ -67,8 +68,7 @@ const Question = ({type,mongoUserId, questionDetails}: Props) => {
           title: values.title,
           content: values.explanation,
           tags: values.tags,
-          author: JSON.parse(mongoUserId),
-          path:pathname        
+          path:pathname
         });
         ///////////// navigate to home page ////////////////  
 

@@ -12,10 +12,11 @@ import User from "@/database/user.model";
 import { revalidatePath } from "next/cache";
 import Answer from "@/database/answer.model";
 import Interaction from "@/database/interaction.model";
+import { getAuthenticatedUser, isSameId } from "@/lib/auth";
 
 export async function getQuestions(params: GetQuestionsParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
     const { searchQuery, filter, page = 1, pageSize = 20 } = params;
 
@@ -68,7 +69,11 @@ export async function createQuestion(params: CreateQuestionParams) {
   try {
     await connectToDatabase();
 
-    const { title, content, tags, author, path } = params;
+    // The author is always the signed-in user — never a client-supplied id.
+    const mongoUser = await getAuthenticatedUser();
+    const author = mongoUser._id;
+
+    const { title, content, tags, path } = params;
 
     const tagDocuments = [];
 
@@ -126,7 +131,7 @@ export async function createQuestion(params: CreateQuestionParams) {
 
 export async function getQuestionsById(params: GetQuestionByIdParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
     const { questionId } = params;
 
@@ -147,9 +152,23 @@ export async function getQuestionsById(params: GetQuestionByIdParams) {
 
 export async function upvoteQuestion(params: QuestionVoteParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
-    const { questionId, userId, hasupVoted, hasdownVoted, path } = params;
+    const mongoUser = await getAuthenticatedUser();
+    const userId = mongoUser._id;
+
+    const { questionId, hasupVoted, hasdownVoted, path } = params;
+
+    // Load first so the self-vote check runs BEFORE any write.
+    const existingQuestion = await Question.findById(questionId);
+
+    if (!existingQuestion) {
+      throw new Error("Question not found");
+    }
+
+    if (isSameId(existingQuestion.author, userId)) {
+      throw new Error("You cannot vote on your own question");
+    }
 
     let updateQuery = {};
 
@@ -186,9 +205,23 @@ export async function upvoteQuestion(params: QuestionVoteParams) {
 }
 export async function downvoteQuestion(params: QuestionVoteParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
-    const { questionId, userId, hasupVoted, hasdownVoted, path } = params;
+    const mongoUser = await getAuthenticatedUser();
+    const userId = mongoUser._id;
+
+    const { questionId, hasupVoted, hasdownVoted, path } = params;
+
+    // Load first so the self-vote check runs BEFORE any write.
+    const existingQuestion = await Question.findById(questionId);
+
+    if (!existingQuestion) {
+      throw new Error("Question not found");
+    }
+
+    if (isSameId(existingQuestion.author, userId)) {
+      throw new Error("You cannot vote on your own question");
+    }
 
     let updateQuery = {};
 
@@ -229,9 +262,21 @@ export async function downvoteQuestion(params: QuestionVoteParams) {
 
 export async function deleteQuestion(params: DeleteQuestionParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
+
+    const mongoUser = await getAuthenticatedUser();
 
     const { questionId, path } = params;
+
+    const question = await Question.findById(questionId);
+
+    if (!question) {
+      throw new Error("Question not found");
+    }
+
+    if (!isSameId(question.author, mongoUser._id)) {
+      throw new Error("Forbidden: only the author can delete this question");
+    }
 
     await Question.deleteOne({ _id: questionId });
     await Answer.deleteMany({ question: questionId });
@@ -246,7 +291,9 @@ export async function deleteQuestion(params: DeleteQuestionParams) {
 }
 export async function deleteAnswer(params: DeleteAnswerParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
+
+    const mongoUser = await getAuthenticatedUser();
 
     const { answerId, path } = params;
 
@@ -254,6 +301,10 @@ export async function deleteAnswer(params: DeleteAnswerParams) {
 
     if(!answer) {
       throw new Error("Answer not found");
+    }
+
+    if (!isSameId(answer.author, mongoUser._id)) {
+      throw new Error("Forbidden: only the author can delete this answer");
     }
     await Answer.deleteOne({_id: answerId}); //////////////////////////////////////////////////////////////////
     await Question.updateMany({ _id: answer.question },{ $pull: { answers: answerId } });
@@ -267,18 +318,26 @@ export async function deleteAnswer(params: DeleteAnswerParams) {
 }
 export async function editQuestion(params: EditQuestionParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
-    const { questionId, title, content } = params;
+    const mongoUser = await getAuthenticatedUser();
+
+    const { questionId, title, content, path } = params;
 
     const question = await Question.findById(questionId).populate("tags");
 
     if(!question) throw new Error("Question not found");
 
+    if (!isSameId(question.author, mongoUser._id)) {
+      throw new Error("Forbidden: only the author can edit this question");
+    }
+
     question.title = title;
     question.content = content;
 
     await question.save();
+
+    revalidatePath(path);
    
   } catch (error) {
     console.log(error);
@@ -288,7 +347,7 @@ export async function editQuestion(params: EditQuestionParams) {
 
 export async function getHotQuestions() {
     try {
-        connectToDatabase();
+        await connectToDatabase();
 
         const hotQuestions = await Question.find({})
         .sort({ views: -1, upvotes: -1 })   /////////// descending order //////////

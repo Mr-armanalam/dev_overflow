@@ -1,27 +1,37 @@
-'use server'
 import mongoose from "mongoose";
 
 let isConnected: boolean = false;
 
 export const connectToDatabase = async () => {
-   mongoose.set("strictQuery", true); // only allow query that match with schema
-   
-  if (!process.env.NEXT_PUBLIC_MONGODB_URL) {
-    return console.log("Missing mongodb URL");
+  mongoose.set("strictQuery", true); // only allow query that match with schema
+
+  // Server-only variable: never use a NEXT_PUBLIC_* variable for the
+  // database URI — NEXT_PUBLIC_* values are inlined into the client bundle.
+  const mongodbUrl = process.env.MONGODB_URL;
+
+  if (!mongodbUrl) {
+    throw new Error(
+      "Missing MONGODB_URL environment variable. See .env.example.",
+    );
   }
 
-  if (isConnected) {
-    return console.log("Mongodb is already connected");
+  if (isConnected && mongoose.connection.readyState === 1) {
+    return;
   }
+
+  // A previous connection may have dropped; allow a fresh connect attempt.
+  isConnected = false;
 
   try {
-    await mongoose.connect(process.env.NEXT_PUBLIC_MONGODB_URL, {
+    await mongoose.connect(mongodbUrl, {
       dbName: "Stack_Overflow",
     });
     isConnected = true;
-    console.log("MongoDB is Connected");
   } catch (error) {
+    // Never kill the whole server on a transient DB failure; let the
+    // caller handle the error and allow a later retry.
+    isConnected = false;
     console.error("Failed to connect to MongoDB", error);
-    process.exit(1);
+    throw error;
   }
 };

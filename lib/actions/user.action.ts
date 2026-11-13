@@ -5,8 +5,6 @@ import { FilterQuery } from "mongoose";
 import User from "@/database/user.model";
 import { connectToDatabase } from "../mongoose";
 import {
-  CreateUserParams,
-  DeleteUserParams,
   GetAllUsersParams,
   GetSavedQuestionsParams,
   GetUserByIdParams,
@@ -20,11 +18,12 @@ import Tag from "@/database/tag.model";
 import Answer from "@/database/answer.model";
 import { BadgeCriteriaType } from "@/types";
 import { assignBadges } from "../utils";
+import { getAuthenticatedUser } from "@/lib/auth";
 
 export async function getUserById(params: GetUserByIdParams) {
   //////////////edited //////////////
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
     const { userId } = params;
     console.log("higetuser", userId);
@@ -41,23 +40,24 @@ export async function getUserById(params: GetUserByIdParams) {
     throw error;
   }
 }
-export async function createUser(userData: CreateUserParams) {
-  try {
-    connectToDatabase();
-
-    const newUser = await User.create(userData);
-
-    return newUser;
-  } catch (error) {
-    console.log(error);
-    throw error;
-  }
-}
+// NOTE: createUser/deleteUser used to live here, but they are webhook-only
+// (Clerk -> MongoDB sync, verified by the Svix signature). They now live in
+// lib/actions/user-sync.ts, which has no "use server" directive, so no
+// client can invoke them as server actions.
 export async function updateUser(params: UpdateUserParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
+
+    // A user may only update their own profile — the clerkId in the
+    // request must match the signed-in session. (The Clerk webhook uses
+    // the internal updateUser in lib/actions/user-sync.ts instead.)
+    const mongoUser = await getAuthenticatedUser();
 
     const { clerkId, updateData, path } = params;
+
+    if (mongoUser.clerkId !== clerkId) {
+      throw new Error("Forbidden: you can only update your own profile");
+    }
 
     // const newUser =
     await User.findOneAndUpdate({ clerkId }, updateData, { new: true });
@@ -68,36 +68,10 @@ export async function updateUser(params: UpdateUserParams) {
     throw error;
   }
 }
-export async function deleteUser(params: DeleteUserParams) {
-  try {
-    connectToDatabase();
-
-    const { clerkId } = params;
-
-    const user = await User.findOneAndDelete({ clerkId });
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    // const userQuestionIds =
-    await Question.find({ author: user._id }).distinct("_id");
-
-    await Question.deleteMany({ author: user._id });
-
-    ///////////// Delete usr comment and anser ///////////////
-
-    // const deletedUser =
-    await User.findByIdAndDelete(user._id);
-  } catch (error) {
-    console.log(error);
-    throw error;
-  }
-}
 
 export async function getAllUsers(params: GetAllUsersParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
     const { searchQuery, filter, page = 1, pageSize = 10 } = params;
     const skipAmount = (page - 1) * pageSize;
@@ -144,9 +118,14 @@ export async function getAllUsers(params: GetAllUsersParams) {
 }
 export async function toggleSaveQuestion(params: ToggleSaveQuestionParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
-    const { userId, questionId, path } = params;
+    // The acting user is always the signed-in user — never a
+    // client-supplied userId.
+    const mongoUser = await getAuthenticatedUser();
+    const userId = mongoUser._id;
+
+    const { questionId, path } = params;
 
     const user = await User.findById(userId);
 
@@ -177,7 +156,7 @@ export async function toggleSaveQuestion(params: ToggleSaveQuestionParams) {
 
 export async function getSavedQuestion(params: GetSavedQuestionsParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
     const { clerkId, searchQuery, page = 1, pageSize = 10 } = params;
     const skipAmount = (page - 1) * pageSize;
@@ -217,7 +196,7 @@ export async function getSavedQuestion(params: GetSavedQuestionsParams) {
 
 export async function getUserInfo(params: GetUserByIdParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
     const { userId } = params;
 
@@ -304,7 +283,7 @@ export async function getUserInfo(params: GetUserByIdParams) {
 
 export async function getUserQuestions(params: GetUserStatsParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
     const { userId, page = 1, pageSize = 10 } = params;
     const skipAmount = (page - 1) * pageSize;
@@ -329,7 +308,7 @@ export async function getUserQuestions(params: GetUserStatsParams) {
 
 export async function getUserAnswers(params: GetUserStatsParams) {
   try {
-    connectToDatabase();
+    await connectToDatabase();
 
     const { userId, page = 1, pageSize = 10 } = params;
     const skipAmount = (page - 1) * pageSize;

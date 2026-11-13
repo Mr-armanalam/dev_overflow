@@ -11,8 +11,10 @@ import { formatNumber, getTimestamp } from "@/lib/utils";
 import Answer from "@/components/forms/Answer";
 import { auth } from "@clerk/nextjs/server";
 import { getUserById } from "@/lib/actions/user.action";
+import { viewQuestion } from "@/lib/actions/interaction.action";
 import AllAnswers from "@/components/shared/AllAnswers";
 import Votes from "@/components/shared/Votes";
+import { notFound } from "next/navigation";
 
 
 type Params = Promise<{ id: string }>
@@ -32,28 +34,41 @@ const page = async (props: { params: Params, searchParams: SearchParams}) => {
 
   const { id } = await props.params;
   const searchparams = await props.searchParams;
-  const result = await getQuestionsById({ questionId: id });
 
   const { userId: clerkId } = await auth();
 
+  // Logged-out visitors may view the question; mongoUser stays
+  // undefined and every use below guards against it (previously this
+  // dereferenced mongoUser._id and crashed the public page).
   let mongoUser;
 
   if (clerkId) {
-    mongoUser = await getUserById({ userId: clerkId });
-    if (!mongoUser) {
-      return {
-        redirect: {
-          destination: "/sign-in",
-          permanent: false,
-        },
-      };
-    }   
+    try {
+      mongoUser = await getUserById({ userId: clerkId });
+    } catch {
+      // Clerk user not synced to MongoDB yet (webhook lag) — treat as
+      // logged out for display purposes instead of crashing.
+      mongoUser = undefined;
+    }
   }
 
-  console.log(mongoUser, 'mongo');
-  
+  const result = await getQuestionsById({ questionId: id });
 
-  /////////////////   const result = await getQuestionsById({ questionId: params.id }); ////////////////////
+  // Unknown id, or a question whose author no longer exists.
+  if (!result || !result.author) {
+    notFound();
+  }
+
+  // Count the view exactly once per page load, only for signed-in
+  // users. viewQuestion dedups per user, so repeat loads and
+  // re-renders do not inflate the count (previously every Votes
+  // instance — one per answer — incremented it on mount).
+  if (mongoUser) {
+    await viewQuestion({
+      questionId: id,
+      userId: mongoUser._id.toString(),
+    });
+  }
 
   return (
     <>
@@ -80,11 +95,11 @@ const page = async (props: { params: Params, searchParams: SearchParams}) => {
             <Votes
               type="Question"
               itemId={JSON.stringify(result._id)}
-              userId={JSON.stringify(mongoUser._id)} //////////// for findig current user ///////////////////
+              userId={mongoUser ? JSON.stringify(mongoUser._id) : undefined} //////////// for findig current user ///////////////////
               upvotes={result.upvotes.length}
-              hasupVoted={result.upvotes.includes(mongoUser._id)}
+              hasupVoted={mongoUser ? result.upvotes.includes(mongoUser._id) : false}
               downvotes={result.downvotes.length}
-              hasdownVoted={result.downvotes.includes(mongoUser._id)}
+              hasdownVoted={mongoUser ? result.downvotes.includes(mongoUser._id) : false}
               hasSaved={mongoUser?.saved.includes(result._id)}
             />
           </div>
@@ -132,7 +147,7 @@ const page = async (props: { params: Params, searchParams: SearchParams}) => {
 
       <AllAnswers
         questionId={result._id}
-        userId={mongoUser._id}  ///////////////// Edited /////////////////
+        userId={mongoUser?._id}  ///////////////// Edited /////////////////
         totalAnswers={result.answers?.length}
         page={searchparams.page }
         filter={searchparams.filter}
@@ -140,11 +155,19 @@ const page = async (props: { params: Params, searchParams: SearchParams}) => {
         // filter={props.searchParams?.filter}
       />
 
-      <Answer
-        question={result.content}
-        questionId={JSON.stringify(result._id)}
-        authorId={JSON.stringify(mongoUser._id)}
-      />
+      {mongoUser ? (
+        <Answer
+          question={result.content}
+          questionId={JSON.stringify(result._id)}
+        />
+      ) : (
+        <p className="paragraph-regular text-dark400_light800 mt-10">
+          <Link href="/sign-in" className="text-primary-500">
+            Sign in
+          </Link>{" "}
+          to write an answer.
+        </p>
+      )}
     </>
   );
 };
