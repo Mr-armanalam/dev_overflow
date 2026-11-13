@@ -17,6 +17,10 @@ import React from 'react'
     // The server actions derive the acting user from the Clerk session,
     // never from this prop.
     userId?: string;
+    // Mongo _id of the question/answer author (JSON.stringify'd, like
+    // userId) — lets the client disable voting on your own content
+    // instead of calling the server and surfacing an error.
+    authorId?: string;
     upvotes: number;
     hasupVoted: boolean;
     downvotes: number;
@@ -24,10 +28,22 @@ import React from 'react'
     hasSaved?: boolean;
  }
 
+// The id props arrive as JSON.stringify'd values (a quoted string).
+// Unwrap them so "own content" can be compared by value.
+const parseId = (value?: string): string | undefined => {
+    if (!value) return undefined;
+    try {
+        return String(JSON.parse(value));
+    } catch {
+        return value;
+    }
+};
+
 const Votes = ({
     type,
     itemId,
     userId,
+    authorId,
     upvotes,
     hasupVoted,
     downvotes,
@@ -37,6 +53,9 @@ const Votes = ({
 
     const pathname = usePathname();
 
+    const isOwn = Boolean(userId && authorId && parseId(userId) === parseId(authorId));
+    const ownLabel = `You can't vote on your own ${type === 'Question' ? 'question' : 'answer'}`;
+
     const handleSave = async () => {
         if(!userId) {
          return toast({
@@ -45,14 +64,22 @@ const Votes = ({
         });;
         }
 
-        await toggleSaveQuestion({
-            questionId: JSON.parse(itemId),
-            path: pathname
-        })
-        return toast({
-            title: `Question ${!hasSaved ? 'Saved in' : 'Removed from'} your collection`,
-            variant: !hasSaved ? 'default' : 'destructive'
-        })
+        try {
+            await toggleSaveQuestion({
+                questionId: JSON.parse(itemId),
+                path: pathname
+            })
+            return toast({
+                title: `Question ${!hasSaved ? 'Saved in' : 'Removed from'} your collection`,
+                variant: !hasSaved ? 'default' : 'destructive'
+            })
+        } catch (error) {
+            return toast({
+                title: 'Something went wrong',
+                description: error instanceof Error ? error.message : 'Please try again.',
+                variant: 'destructive'
+            })
+        }
     }
 
     const handleVote = async (action: string) => {
@@ -63,57 +90,89 @@ const Votes = ({
         });;
         }
 
-        if(action === 'upvote') {
-            if(type === 'Question') {
-                await upvoteQuestion({
-                    questionId: JSON.parse(itemId),
-                    hasupVoted,
-                    hasdownVoted,
-                    path: pathname
-                })
-            }else if(type === 'Answer'){
-                await upvoteAnswer({
-                    answerId: JSON.parse(itemId),
-                    hasupVoted,
-                    hasdownVoted,
-                    path: pathname
+        // Never call the server for your own content: the vote actions
+        // reject self-votes, and an uncaught server-action error shows
+        // as a full-screen Next.js runtime-error overlay.
+        if (isOwn) {
+            return toast({
+                title: ownLabel,
+                variant: 'destructive'
+            });
+        }
+
+        try {
+            if(action === 'upvote') {
+                let result;
+                if(type === 'Question') {
+                    result = await upvoteQuestion({
+                        questionId: JSON.parse(itemId),
+                        hasupVoted,
+                        hasdownVoted,
+                        path: pathname
+                    })
+                }else if(type === 'Answer'){
+                    result = await upvoteAnswer({
+                        answerId: JSON.parse(itemId),
+                        hasupVoted,
+                        hasdownVoted,
+                        path: pathname
+                    })
+                }
+
+                if (result && result.success === false) {
+                    return toast({
+                        title: result.error ?? 'Something went wrong',
+                        variant: 'destructive'
+                    })
+                }
+
+                ///////////// show  a toast ////////////
+                return toast({
+                    title: `Upvotes ${!hasupVoted ? 'Successfully' : 'Removed'}`,
+                    variant: !hasupVoted ? 'default' : 'destructive'
                 })
             }
 
+            if(action === 'downvote') {
+                let result;
+                if(type === 'Question') {
+                    result = await downvoteQuestion({
+                        questionId: JSON.parse(itemId),
+                        hasupVoted,
+                        hasdownVoted,
+                        path: pathname
+                    })
+                }else if(type === 'Answer'){
+                    result = await downvoteAnswer({
+                        answerId: JSON.parse(itemId),
+                        hasupVoted,
+                        hasdownVoted,
+                        path: pathname
+                    })
+                }
 
-            ///////////// show  a toast ////////////
-            return toast({
-                title: `Upvotes ${!hasupVoted ? 'Successfully' : 'Removed'}`,
-                variant: !hasupVoted ? 'default' : 'destructive'
-            })
-        }
+                if (result && result.success === false) {
+                    return toast({
+                        title: result.error ?? 'Something went wrong',
+                        variant: 'destructive'
+                    })
+                }
 
-        if(action === 'downvote') {
-            if(type === 'Question') {
-                await downvoteQuestion({
-                    questionId: JSON.parse(itemId),
-                    hasupVoted,
-                    hasdownVoted,
-                    path: pathname
-                })
-            }else if(type === 'Answer'){
-                await downvoteAnswer({
-                    answerId: JSON.parse(itemId),
-                    hasupVoted,
-                    hasdownVoted,
-                    path: pathname
+                ///////////// show  a toast ////////////
+                return toast({
+                    title: `DownVotes ${!hasdownVoted ? 'Successfully' : 'Removed'}`,
+                    variant: !hasdownVoted ? 'default' : 'destructive'
                 })
             }
-
-
-            ///////////// show  a toast ////////////
+        } catch (error) {
             return toast({
-                title: `DownVotes ${!hasdownVoted ? 'Successfully' : 'Removed'}`,
-                variant: !hasdownVoted ? 'default' : 'destructive'
+                title: 'Something went wrong',
+                description: error instanceof Error ? error.message : 'Please try again.',
+                variant: 'destructive'
             })
         }
-    } 
-    
+    }
+
     // NOTE: view counting used to live here — it ran once per Votes
     // instance (once per answer too), inflating the count N+1 per load.
     // Views are now counted exactly once per question-page load, on the
@@ -123,12 +182,13 @@ const Votes = ({
     <div className='flex gap-5'>
         <div className="flex-center gap-2.5">
             <div className="flex-center gap-1.5">
-                <Image 
+                <Image
                     src={hasupVoted ? '/assets/icons/upvoted.svg': '/assets/icons/upvote.svg'}
                     width={18}
                     height={18}
                     alt='upvote'
-                    className='cursor-pointer'
+                    title={isOwn ? ownLabel : 'Upvote'}
+                    className={isOwn ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
                     onClick={()=> handleVote('upvote')}
                 />
 
@@ -139,12 +199,13 @@ const Votes = ({
                 </div>
             </div>
             <div className="flex-center gap-1.5">
-                <Image 
+                <Image
                     src={hasdownVoted ? '/assets/icons/downvoted.svg': '/assets/icons/downvote.svg'}
                     width={18}
                     height={18}
                     alt='downvote'
-                    className='cursor-pointer'
+                    title={isOwn ? ownLabel : 'Downvote'}
+                    className={isOwn ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
                     onClick={()=> handleVote('downvote')}
                 />
 
@@ -154,7 +215,7 @@ const Votes = ({
                     </p>
                 </div>
             </div>
-            {type === 'Question' && (<Image 
+            {type === 'Question' && (<Image
                 src={hasSaved ? '/assets/icons/star-filled.svg': '/assets/icons/star-red.svg'}
                 width={18}
                 height={18}

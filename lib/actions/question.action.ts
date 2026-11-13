@@ -150,7 +150,7 @@ export async function getQuestionsById(params: GetQuestionByIdParams) {
   }
 }
 
-export async function upvoteQuestion(params: QuestionVoteParams) {
+export async function upvoteQuestion(params: QuestionVoteParams): Promise<{ success: boolean; error?: string }> {
   try {
     await connectToDatabase();
 
@@ -167,7 +167,10 @@ export async function upvoteQuestion(params: QuestionVoteParams) {
     }
 
     if (isSameId(existingQuestion.author, userId)) {
-      throw new Error("You cannot vote on your own question");
+      // Expected user error, not an exception: return it so the client
+      // can show a toast. Throwing here surfaces as a full-screen
+      // Next.js runtime-error overlay in the browser.
+      return { success: false, error: "You cannot vote on your own question" };
     }
 
     let updateQuery = {};
@@ -198,12 +201,13 @@ export async function upvoteQuestion(params: QuestionVoteParams) {
     await User.findByIdAndUpdate(question.author, { $inc: { reputation: hasupVoted ? -10 : 10 } })
 
     revalidatePath(path);
+    return { success: true };
   } catch (error) {
     console.log(error);
     throw error;
   }
 }
-export async function downvoteQuestion(params: QuestionVoteParams) {
+export async function downvoteQuestion(params: QuestionVoteParams): Promise<{ success: boolean; error?: string }> {
   try {
     await connectToDatabase();
 
@@ -254,6 +258,7 @@ export async function downvoteQuestion(params: QuestionVoteParams) {
     })
 
     revalidatePath(path);
+    return { success: true };
   } catch (error) {
     console.log(error);
     throw error;
