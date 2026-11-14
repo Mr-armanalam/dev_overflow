@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable spaced-comment */
 "use server";
-import { FilterQuery, type Types } from "mongoose";
+import { QueryFilter, type Types } from "mongoose";
 import Question from "@/database/question.model";
 import Tag from "@/database/tag.model";
 import { connectToDatabase } from "../mongoose";
@@ -28,7 +28,7 @@ export async function getQuestions(params: GetQuestionsParams) {
 
     const skipAmount = (page - 1) * pageSize;
 
-    const query : FilterQuery<typeof Question> = {};
+    const query : QueryFilter<typeof Question> = {};
     if (searchQuery) {
       query.$or = [
         { title: { $regex: new RegExp(searchQuery, "i") }},
@@ -106,7 +106,7 @@ export async function createQuestion(params: CreateQuestionParams) {
       const existingTag = await Tag.findOneAndUpdate(
         { name: { $regex: new RegExp(`^${tag}$`, "i") } },
         { $setOnInsert: { name: tag }, $push: { questions: question._id } },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: 'after' }
       );
 
       tagDocuments.push(existingTag._id);
@@ -200,7 +200,7 @@ export async function upvoteQuestion(params: QuestionVoteParams): Promise<{ succ
     }
 
     const question = await Question.findByIdAndUpdate(questionId, updateQuery, {
-      new: true,
+      returnDocument: 'after',
     });
 
     if (!question) {
@@ -254,7 +254,7 @@ export async function downvoteQuestion(params: QuestionVoteParams): Promise<{ su
     }
 
     const question = await Question.findByIdAndUpdate(questionId, updateQuery, {
-      new: true,
+      returnDocument: 'after',
     });
 
     if (!question) {
@@ -262,16 +262,12 @@ export async function downvoteQuestion(params: QuestionVoteParams): Promise<{ su
     }
 
     /////////////// Increment author's reputation //////////////////
-    // Mirror the upvote logic with the opposite signs: a new downvote
-    // costs the voter 2 and the author 10; removing a downvote refunds
-    // both. (Previously this keyed the voter branch off hasupVoted and
-    // gave the author +10 for a fresh downvote.)
     await User.findByIdAndUpdate(userId, {
-      $inc: { reputation: hasdownVoted ? 2 : -2 }
+      $inc: { reputation: hasupVoted ? -2: 2}
     })
 
     await User.findByIdAndUpdate(question.author, {
-      $inc: { reputation: hasdownVoted ? 10 : -10 }
+      $inc: { reputation: hasdownVoted? -10: 10}
     })
 
     revalidatePath(path);
@@ -303,9 +299,7 @@ export async function deleteQuestion(params: DeleteQuestionParams) {
     await Question.deleteOne({ _id: questionId });
     await Answer.deleteMany({ question: questionId });
     await Interaction.deleteMany({ question: questionId });
-    // Tag has no `question` field — its array is `questions`, so the
-    // old filter matched nothing and tag references were orphaned.
-    await Tag.updateMany({ questions: questionId },{ $pull: { questions: questionId } });
+    await Tag.updateMany({ question: questionId },{ $pull: { questions: questionId } });
 
     // RAG: drop the question's chunks (fire-and-forget, never throws).
     void deleteChunksFor(questionId);
@@ -398,7 +392,7 @@ export async function getRecommentedQuestions(params: RecommendedParams){
   try {
     await connectToDatabase();
 
-    const { userId, page = 1, pageSize = 20 , searchQuery } = params;
+    const { userId, page = 1, pageSize = 28 , searchQuery } = params;
 
     const user = await User.findOne({ clerkId: userId});
 
@@ -423,26 +417,19 @@ export async function getRecommentedQuestions(params: RecommendedParams){
       ...new Set(userTags.map((tag: any) => tag._id)),
     ];
 
-    // The search clause must live INSIDE the $and: as a sibling $or it
-    // could return questions outside the user's tags. $title is not a
-    // field — the title field is `title`.
-    const andClauses: FilterQuery<typeof Question>[] = [
-      { tags: {$in: distinctUserTagIds}},  /////////// Question with user tags ///////////////
-      { author: {$ne: user._id}}, ///////////// Exclude user's own questions ///////////////
-    ];
+    const query: QueryFilter<typeof Question> = {
+      $and: [
+        { tags: {$in: distinctUserTagIds}},  /////////// Question with user tags ///////////////
+        { author: {$ne: user._id}}, ///////////// Exclude user's own questions ///////////////
+      ]
+    };
 
     if(searchQuery) {
-      andClauses.push({
-        $or: [
-          { title: { $regex: searchQuery, $options: "i"} },
-          { content: { $regex: searchQuery, $options: "i"}}
-        ]
-      });
+      query.$or = [
+        { $title: { $regex: searchQuery, $options: "i"} },
+        { content: { $regex: searchQuery, $options: "i"}}
+      ];
     }
-
-    const query: FilterQuery<typeof Question> = {
-      $and: andClauses
-    };
 
     const totalQustions = await Question.countDocuments(query);
     
@@ -458,7 +445,7 @@ export async function getRecommentedQuestions(params: RecommendedParams){
     .skip(skipAmount)
     .limit(pageSize);
 
-    const isNext = totalQustions > skipAmount + recommendedQuestions.length;
+    const isNext = totalQustions > recommendedQuestions.length;
 
     return { questions: recommendedQuestions, isNext}
 

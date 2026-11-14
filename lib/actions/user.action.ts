@@ -1,7 +1,7 @@
 /* eslint-disable spaced-comment */
 "use server";
 
-import { FilterQuery } from "mongoose";
+import { QueryFilter } from "mongoose";
 import User from "@/database/user.model";
 import { connectToDatabase } from "../mongoose";
 import {
@@ -60,7 +60,7 @@ export async function updateUser(params: UpdateUserParams) {
     }
 
     // const newUser =
-    await User.findOneAndUpdate({ clerkId }, updateData, { new: true });
+    await User.findOneAndUpdate({ clerkId }, updateData, { returnDocument: 'after' });
 
     revalidatePath(path);
   } catch (error) {
@@ -76,7 +76,7 @@ export async function getAllUsers(params: GetAllUsersParams) {
     const { searchQuery, filter, page = 1, pageSize = 10 } = params;
     const skipAmount = (page - 1) * pageSize;
 
-    const query: FilterQuery<typeof User> = {};
+    const query: QueryFilter<typeof User> = {};
 
     if (searchQuery) {
       query.$or = [
@@ -137,13 +137,13 @@ export async function toggleSaveQuestion(params: ToggleSaveQuestionParams) {
       await User.findByIdAndUpdate(
         userId,
         { $pull: { saved: questionId } },
-        { new: true },
+        { returnDocument: 'after' },
       );
     } else {
       await User.findByIdAndUpdate(
         userId,
         { $addToSet: { saved: questionId } },
-        { new: true },
+        { returnDocument: 'after' },
       );
     }
 
@@ -158,35 +158,10 @@ export async function getSavedQuestion(params: GetSavedQuestionsParams) {
   try {
     await connectToDatabase();
 
-    const { clerkId, searchQuery, filter, page = 1, pageSize = 10 } = params;
+    const { clerkId, searchQuery, page = 1, pageSize = 10 } = params;
     const skipAmount = (page - 1) * pageSize;
 
-    // The collections Filter dropdown writes ?filter=; previously the
-    // param was accepted and ignored. NOTE: most_voted / most_answered
-    // sort on array fields, which MongoDB orders by element, not
-    // length — the same pre-existing limitation as getHotQuestions.
-    // most_recent / oldest / most_viewed sort exactly.
-    let savedSort: Record<string, 1 | -1> = { createdAt: -1 };
-    switch (filter) {
-      case "oldest":
-        savedSort = { createdAt: 1 };
-        break;
-      case "most_voted":
-        savedSort = { upvotes: -1 };
-        break;
-      case "most_viewed":
-        savedSort = { views: -1 };
-        break;
-      case "most_answered":
-        savedSort = { answers: -1 };
-        break;
-      case "most_recent":
-      default:
-        savedSort = { createdAt: -1 };
-        break;
-    }
-
-    const query: FilterQuery<typeof Question> = searchQuery
+    const query: QueryFilter<typeof Question> = searchQuery
       ? { title: { $regex: new RegExp(searchQuery, "i") } }
       : {};
 
@@ -194,7 +169,7 @@ export async function getSavedQuestion(params: GetSavedQuestionsParams) {
       path: "saved",
       match: query,
       options: {
-        sort: savedSort,
+        sort: { createdAt: -1 },
         skip: skipAmount,
         limit: pageSize + 1,
       },
@@ -204,15 +179,13 @@ export async function getSavedQuestion(params: GetSavedQuestionsParams) {
       ],
     });
 
+    const isNext = user.saved.length > pageSize;
+
     if (!user) {
       throw new Error("User not found");
     }
 
-    const isNext = user.saved.length > pageSize;
-
-    // The populate fetched pageSize + 1 rows to probe for a next page;
-    // only return pageSize of them (previously all 11 leaked through).
-    const savedQuestion = user.saved.slice(0, pageSize);
+    const savedQuestion = user.saved;
 
     return { questions: savedQuestion, isNext };
   } catch (error) {
@@ -266,16 +239,12 @@ export async function getUserInfo(params: GetUserByIdParams) {
         },
       },
     ]);
-    // Views live on questions, not answers (the Answer collection has
-    // no views field), and the criteria below reads totalViews — the
-    // previous pipeline grouped under totalUpvotes, so the badge was
-    // always 0.
-    const [questionViews] = await Question.aggregate([
+    const [questionViews] = await Answer.aggregate([
       { $match: { author: user._id } },
       {
         $group: {
           _id: null,
-          totalViews: { $sum: "$views" },
+          totalUpvotes: { $sum: "$views" },
         },
       },
     ]);
