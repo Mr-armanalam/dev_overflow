@@ -5,7 +5,7 @@ const Loading = () => {
   return (
     <section>
             <Skeleton className = 'h-12 w-52' />
-            <Skeleton className = 'mb-12 mt-11 h-14 w-full' />
+            <Skeleton className = 'mt-11 mb-12 h-14 w-full' />
 
         <div className="flex flex-wrap gap-4">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((item) => (

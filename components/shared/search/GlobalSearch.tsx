@@ -40,6 +40,11 @@ const GlobalSearch = () => {
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
+      // Guard: Next has no same-URL bailout — pushing the URL we are
+      // already on re-renders the page and re-fires this effect (the
+      // fresh useSearchParams() object is a dependency), so only
+      // navigate when the target actually differs.
+      const currentUrl = window.location.pathname + window.location.search;
       if (search) {
         const newUrl = formUrlQuery({
           params: searchParams.toString(),
@@ -47,14 +52,14 @@ const GlobalSearch = () => {
           value: search,
         });
 
-        router.push(newUrl, { scroll: false });
+        if (newUrl !== currentUrl) router.push(newUrl, { scroll: false });
       } else {
         if (query) {
           const newUrl = removeKeysFromQuery({
             params: searchParams.toString(),
             keysToRemove: ["global", 'type'],
           });
-          router.push(newUrl, { scroll: false });
+          if (newUrl !== currentUrl) router.push(newUrl, { scroll: false });
         }
       }
     }, 300);
@@ -63,8 +68,8 @@ const GlobalSearch = () => {
   }, [search, pathname, router, searchParams, query]);
 
   return (
-    <div className="relative w-full max-w-[600px] max-lg:hidden" ref={searchContainerRef}>
-      <div className="background-light800_darkgradient relative flex min-h-[56px] grow items-center gap-1 rounded-xl px-4">
+    <div className="relative w-full max-w-150 max-lg:hidden" ref={searchContainerRef}>
+      <div className="relative flex min-h-14 grow items-center gap-1 rounded-xl background-light800_darkgradient px-4">
         <Image
           src={"/assets/icons/search.svg"}
           alt="search"
@@ -82,7 +87,7 @@ const GlobalSearch = () => {
             if(!isOpen) setIsOpen(true);
             if(e.target.value === '' && isOpen) setIsOpen(false);
           }}
-          className="paragraph-regular no-focus text-dark400_light700 placeholder background-light800_darkgradient border-none shadow-none outline-none "
+          className="border-none background-light800_darkgradient paragraph-regular placeholder text-dark400_light700 shadow-none no-focus outline-hidden "
         />
       </div>
       {isOpen && <GlobalResult />}

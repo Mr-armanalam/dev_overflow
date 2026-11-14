@@ -1,4 +1,4 @@
-/* eslint-disable spaced-comment */
+ 
 import Link from "next/link";
 import React from "react";
 import RenderTag from "../shared/RenderTag";
@@ -41,14 +41,14 @@ const QuestionCard = ({
 
   const showActionButton = clerkId && clerkId === author.clerkId;
 
-  return <div className="card-wrapper rounded-[10px] p-9 sm:px-11 ">
+  return <div className="rounded-[10px] card-wrapper p-9 sm:px-11 ">
     <div className="flex flex-col-reverse items-start justify-between gap-5 sm:flex-row">
         <div>
-            <span className="subtle-regular text-dark400_light700 line-clamp-1 flex sm:hidden ">
+            <span className="line-clamp-1 flex subtle-regular text-dark400_light700 sm:hidden ">
                 {getTimestamp(createdAt)}
             </span>
             <Link href={`/question/${_id}`}>
-                <h3 className="sm:h3-semibold base-semibold text-dark200_light900 line-clamp-1 flex-1">{title}</h3>
+                <h3 className="line-clamp-1 flex-1 base-semibold text-dark200_light900 sm:h3-semibold">{title}</h3>
             </Link>
         </div>
         
@@ -66,7 +66,7 @@ const QuestionCard = ({
         ))}
     </div>
 
-    <div className="flex-between mt-6 w-full flex-wrap gap-3">
+    <div className="mt-6 flex-between w-full flex-wrap gap-3">
         <Metric 
         imgUrl={author.picture}
         alt="User"

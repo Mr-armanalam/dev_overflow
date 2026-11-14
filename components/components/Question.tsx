@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable spaced-comment */
-/* eslint-disable import/no-duplicates */
+ 
+ 
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { Editor } from "@tinymce/tinymce-react";
@@ -307,11 +307,11 @@ const Question = ({type, questionDetails}: Props) => {
               </FormLabel>
               <FormControl className="mt-3.5">
                 <Input
-                  className="no-focus paragraph-regular background-light900_dark300 light-border-2 text-dark300_light700 min-h-[56px] border"
+                  className="min-h-14 border light-border-2 background-light900_dark300 paragraph-regular text-dark300_light700 no-focus"
                   {...field}
                 />
               </FormControl>
-              <FormDescription className="body-regular mt-2.5 text-light-500">
+              <FormDescription className="mt-2.5 body-regular text-light-500">
                 Be specific and imagine you&apos;re asking a question to another
                 person.
               </FormDescription>
@@ -320,7 +320,7 @@ const Question = ({type, questionDetails}: Props) => {
           )}
         />
         {(duplicateSuggest || similarQuestions.length > 0) && (
-          <div className="background-light900_dark300 light-border-2 rounded-md border p-4">
+          <div className="rounded-md border light-border-2 background-light900_dark300 p-4">
             {duplicateSuggest && (
               <div className="mb-3 rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3">
                 <p className="small-medium text-dark400_light800">
@@ -332,7 +332,7 @@ const Question = ({type, questionDetails}: Props) => {
                     {duplicateSuggest.title}
                   </Link>
                 </p>
-                <p className="body-regular mt-1 text-light-500">
+                <p className="mt-1 body-regular text-light-500">
                   {duplicateSuggest.reason} Check it first — your question
                   may already be answered there.
                 </p>
@@ -399,7 +399,7 @@ const Question = ({type, questionDetails}: Props) => {
                 />               
               </FormControl>
               
-              <FormDescription className="body-regular mt-2.5 text-light-500">
+              <FormDescription className="mt-2.5 body-regular text-light-500">
                 Introduce the problem and expand on what you put in the title.
                 Minimum 100 characters
               </FormDescription>
@@ -420,18 +420,18 @@ const Question = ({type, questionDetails}: Props) => {
                 <div>
                   <Input
                     disabled={type === 'Edit'}
-                    className="no-focus paragraph-regular background-light900_dark300 light-border-2 text-dark300_light700 min-h-[56px] border"
+                    className="min-h-14 border light-border-2 background-light900_dark300 paragraph-regular text-dark300_light700 no-focus"
                     placeholder="Add tags..."
                     onKeyDown={(e) => handleInputKeyDown(e, field)}
                   />
 
                   {field.value.length > 0 && (
-                    <div className="flex-start mt-2.5 gap-2.5">
+                    <div className="mt-2.5 flex-start gap-2.5">
                       {field.value.map((tag: any) => (
                         <Badge
                           key={tag}
-                          className="subtle-medium background-light800_dark300 text-light400_light500 
-                        flex items-center justify-center gap-2 rounded-md border-none px-4 py-2 capitalize"
+                          className="flex items-center justify-center 
+                        gap-2 rounded-md border-none background-light800_dark300 px-4 py-2 subtle-medium text-light400_light500 capitalize"
                           onClick={() => type !== 'Edit' ? handleTagRemove(tag, field) : () => {}}
                         >
                           {tag}
@@ -456,7 +456,7 @@ const Question = ({type, questionDetails}: Props) => {
                         type="button"
                         onClick={suggestTags}
                         disabled={isSuggestingTags}
-                        className="btn light-border-2 flex items-center gap-1.5 rounded-md px-3 py-2 text-primary-500 shadow-none dark:text-primary-500"
+                        className="flex items-center gap-1.5 rounded-md light-border-2 btn px-3 py-2 text-primary-500 shadow-none dark:text-primary-500"
                       >
                         <Image
                           src={"/assets/icons/stars.svg"}
@@ -468,11 +468,11 @@ const Question = ({type, questionDetails}: Props) => {
                         {isSuggestingTags ? "Suggesting…" : "Suggest tags"}
                       </button>
                       {suggestedTags.length > 0 && (
-                        <div className="flex-start mt-2.5 gap-2.5">
+                        <div className="mt-2.5 flex-start gap-2.5">
                           {suggestedTags.map((tag) => (
                             <Badge
                               key={tag}
-                              className="subtle-medium background-light800_dark300 text-light400_light500 flex cursor-pointer items-center justify-center gap-2 rounded-md border-none px-4 py-2 capitalize"
+                              className="flex cursor-pointer items-center justify-center gap-2 rounded-md border-none background-light800_dark300 px-4 py-2 subtle-medium text-light400_light500 capitalize"
                               onClick={() => addSuggestedTag(tag, field)}
                             >
                               + {tag}
@@ -481,7 +481,7 @@ const Question = ({type, questionDetails}: Props) => {
                         </div>
                       )}
                       {tagSuggestError && (
-                        <p className="body-regular mt-2 text-red-500">
+                        <p className="mt-2 body-regular text-red-500">
                           {tagSuggestError}
                         </p>
                       )}
@@ -489,7 +489,7 @@ const Question = ({type, questionDetails}: Props) => {
                   )}
                 </div>
               </FormControl>
-              <FormDescription className="body-regular mt-2.5 text-light-500">
+              <FormDescription className="mt-2.5 body-regular text-light-500">
                 Add up to 3 tags to describe what your question is about. You
                 need to press Enter or comma to add a tag.
               </FormDescription>
@@ -499,7 +499,7 @@ const Question = ({type, questionDetails}: Props) => {
         />
         <Button
           type="submit"
-          className="primary-gradient w-fit !text-light-900"
+          className="w-fit text-light-900! primary-gradient"
           disabled={isSubmitting}
         >
           {isSubmitting ? (

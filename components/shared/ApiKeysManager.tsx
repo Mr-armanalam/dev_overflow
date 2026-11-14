@@ -97,7 +97,7 @@ export default function ApiKeysManager() {
   return (
     <div className="mt-9">
       <h2 className="h2-bold text-dark100_light900">API Keys (MCP)</h2>
-      <p className="paragraph-regular mt-2 text-dark500_light700">
+      <p className="mt-2 paragraph-regular text-dark500_light700">
         Keys let external agents (Claude Desktop, IDE agents) call Dev
         Overflow over MCP at <code>/api/mcp</code>. A key can read
         questions, tags and public user stats; with the draft scope it can
@@ -106,11 +106,11 @@ export default function ApiKeysManager() {
       </p>
 
       {newKey && (
-        <div className="background-light800_dark300 mt-5 rounded-md border border-green-500 p-4">
+        <div className="mt-5 rounded-md border border-green-500 background-light800_dark300 p-4">
           <p className="body-bold text-dark100_light900">
             Copy your new key now — this is the only time it is shown.
           </p>
-          <code className="mt-2 block break-all rounded bg-black/10 p-2 text-sm dark:bg-white/10">
+          <code className="mt-2 block rounded bg-black/10 p-2 text-sm break-all dark:bg-white/10">
             {newKey}
           </code>
           <div className="mt-3 flex gap-2">
@@ -151,11 +151,11 @@ export default function ApiKeysManager() {
       </div>
 
       {loading ? (
-        <p className="paragraph-regular mt-5 text-dark500_light700">
+        <p className="mt-5 paragraph-regular text-dark500_light700">
           Loading keys…
         </p>
       ) : keys.length === 0 ? (
-        <p className="paragraph-regular mt-5 text-dark500_light700">
+        <p className="mt-5 paragraph-regular text-dark500_light700">
           No API keys yet.
         </p>
       ) : (
@@ -166,7 +166,7 @@ export default function ApiKeysManager() {
             return (
               <li
                 key={key.id}
-                className="background-light800_dark300 flex flex-col gap-2 rounded-md p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 rounded-md background-light800_dark300 p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <p className="body-bold text-dark100_light900">

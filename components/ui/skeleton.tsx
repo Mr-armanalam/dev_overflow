@@ -1,4 +1,4 @@
-/* eslint-disable react/react-in-jsx-scope */
+ 
 import { cn } from "@/lib/utils"
 
 function Skeleton({

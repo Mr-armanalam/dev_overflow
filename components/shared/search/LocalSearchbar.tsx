@@ -31,6 +31,11 @@ const LocalSearchbar = ({
 
   useEffect(()=>{
     const delayDebounceFn = setTimeout(()=>{
+      // Guard: Next has no same-URL bailout — pushing the URL we are
+      // already on re-renders the page and re-fires this effect (the
+      // fresh useSearchParams() object is a dependency), so only
+      // navigate when the target actually differs.
+      const currentUrl = window.location.pathname + window.location.search;
       if (search) {
         const newUrl = formUrlQuery({
           params: searchParams.toString(),
@@ -38,14 +43,14 @@ const LocalSearchbar = ({
           value: search
         })
 
-        router.push(newUrl, { scroll: false});
+        if (newUrl !== currentUrl) router.push(newUrl, { scroll: false});
       } else {
         if(pathname === route) {
           const newUrl = removeKeysFromQuery({
             params: searchParams.toString(),
             keysToRemove: ['q']
           })
-          router.push(newUrl, { scroll: false});
+          if (newUrl !== currentUrl) router.push(newUrl, { scroll: false});
         }
       }
     }, 300);
@@ -56,7 +61,7 @@ const LocalSearchbar = ({
 
   return (
     <div
-      className={`background-light800_darkgradient flex min-h-[56px] grow items-center gap-4 rounded-[10px] px-4
+      className={`flex min-h-14 grow items-center gap-4 rounded-[10px] background-light800_darkgradient px-4
     ${otherClasses}`}
     >
       {iconPosition === "left" && (
@@ -74,7 +79,7 @@ const LocalSearchbar = ({
         placeholder={placeholder}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="paragraph-regular no-focus placeholder background-light800_darkgradient border-none shadow-none outline-none"
+        className="border-none background-light800_darkgradient paragraph-regular placeholder shadow-none no-focus outline-hidden"
       />
 
       {iconPosition === "right" && (

@@ -80,19 +80,19 @@ const GlobalResult = () => {
   };
 
   return (
-    <div className="absolute top-full z-10 mt-3 w-full rounded-xl bg-light-800 py-5 shadow-sm dark:bg-dark-400" >
-      <div className="text-dark400_light900 paragraph-semibold px-5">
+    <div className="absolute top-full z-10 mt-3 w-full rounded-xl bg-light-800 py-5 shadow-xs dark:bg-dark-400" >
+      <div className="px-5 paragraph-semibold text-dark400_light900">
         <GlobalFilters />
       </div>
-      <div className="my-5 h-[1px] bg-light-700/50 dark:bg-dark-500/50" />
+      <div className="my-5 h-px bg-light-700/50 dark:bg-dark-500/50" />
       <div className="space-y-5">
-        <p className="text-dark400_light900 paragraph-semibold px-5">
+        <p className="px-5 paragraph-semibold text-dark400_light900">
           Top Match
         </p>
         {isLoading ? (
           <div className="flex-center flex-col px-5">
-            <ReloadIcon className="my-2 h-10 w-10 animate-spin text-primary-500" />
-            <p className="text-dark200_light800 body-regular">
+            <ReloadIcon className="my-2 size-10 animate-spin text-primary-500" />
+            <p className="body-regular text-dark200_light800">
               Browsing the entire database{" "}
             </p>
           </div>
@@ -110,14 +110,14 @@ const GlobalResult = () => {
                     alt={item.type}
                     width={18}
                     height={18}
-                    className="invert-colors mt-1 object-contain"
+                    className="mt-1 object-contain invert-colors"
                   />
 
                   <div className="flex flex-col">
-                    <p className="body-medium text-dark200_light800 line-clamp-1">
+                    <p className="line-clamp-1 body-medium text-dark200_light800">
                       {item.title}
                     </p>
-                    <p className="text-light400_light500 small-medium mt-1 font-bold capitalize">
+                    <p className="mt-1 small-medium font-bold text-light400_light500 capitalize">
                       {item.type}
                     </p>
                   </div>
@@ -125,7 +125,7 @@ const GlobalResult = () => {
               ))
             ) : (
               <div className="flex-center flex-col px-5">
-                <p className="text-dark200_light800 body-regular px-5 py-2.5">
+                <p className="px-5 py-2.5 body-regular text-dark200_light800">
                   Oops, no results found
                 </p>
               </div>

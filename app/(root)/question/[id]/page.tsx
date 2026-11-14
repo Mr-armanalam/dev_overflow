@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable spaced-comment */
+ 
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -105,11 +105,11 @@ const page = async (props: { params: Params, searchParams: SearchParams}) => {
             />
           </div>
         </div>
-        <h2 className="h2-semibold text-dark200_light900 mt-3.5 w-full text-left">
+        <h2 className="mt-3.5 w-full text-left h2-semibold text-dark200_light900">
           {result.title}
         </h2>
       </div>
-      <div className="mb-8 mt-5 flex flex-wrap gap-4">
+      <div className="mt-5 mb-8 flex flex-wrap gap-4">
         <Metric
           imgUrl="/assets/icons/like.svg"
           alt="clock icon"
@@ -159,7 +159,7 @@ const page = async (props: { params: Params, searchParams: SearchParams}) => {
       {mongoUser ? (
         <Answer questionId={JSON.stringify(result._id)} />
       ) : (
-        <p className="paragraph-regular text-dark400_light800 mt-10">
+        <p className="mt-10 paragraph-regular text-dark400_light800">
           <Link href="/sign-in" className="text-primary-500">
             Sign in
           </Link>{" "}
