@@ -1,132 +1,123 @@
-# Dev Overflow — A Production-Grade Developer Q&A Platform
+# Dev Overflow
 
-Dev Overflow is a high-performance, full-stack community Q&A platform tailored for developers to share technical knowledge, ask complex questions, and collaborate efficiently. Built using modern web architectures like **Next.js**, **React**, and **Tailwind CSS**, the system implements predictive global searches, query-state persistence, interactive rich-text authoring, dynamic badge rewards, and responsive layouts.
+Dev Overflow is a developer Q&A platform: ask questions, write answers, vote on answers, browse by tag, and save questions to collections. It also includes an AI-assisted answering workflow — streaming answer drafts grounded in similar questions via retrieval, tag suggestions, duplicate detection, and an MCP server — with per-user budgets, caching, and usage dashboards.
 
----
+## Features
 
-## 🚀 Key Architectural Pillars & System Overview
+### Q&A
 
-The platform is designed around seamless state synchronization, client-side caching, and intuitive user experiences. By utilizing Next.js's native routing ecosystem alongside dynamic state-driven layouts, Dev Overflow delivers an ultra-fast, Single Page Application (SPA) feel while maintaining modular structure.
+- Ask questions with a TinyMCE rich-text editor and comma-separated tag input
+- Answer questions, vote answers up and down, and save questions to collections
+- Reputation that moves with votes on your answers, and activity badges (Gold, Silver, Bronze), including a TOTAL_VIEWS badge
+- User profiles with top posts, answers, and stats, plus a community directory
+- Global search across questions, answers, users, and tags, plus per-page local search, with search state kept in the URL
 
----
+### AI-assisted answering
 
-## 📱 Page-by-Page Feature & UI Breakdown
+- Streaming answer drafts (Gemini 2.5 Flash) with citations to similar questions retrieved from MongoDB Atlas Vector Search (gemini-embedding-2, 768 dimensions)
+- Drafts are never published automatically: the user reviews the draft, inserts it into the editor, edits, and submits. AI-assisted answers are badged and earn no reputation
+- Tag suggestions for a question draft
+- Live similar-question suggestions while asking, with duplicate detection (suggestion only, never auto-close); moderators review duplicates in `/admin/duplicates`
+- Daily budgets: 10 answer drafts and 20 tag suggestions per user per day; cache hits do not consume budget
+- Exact and semantic caching plus per-IP burst limits via Upstash Redis (optional — the app works without it)
+- MCP server (`POST /api/mcp`, Streamable HTTP) with API keys: search questions, get a question, list tags, get public user stats, create answer drafts (draft-only, no publishing)
+- Role-based access (user, moderator, admin) with a usage dashboard at `/admin/ai`
+- Quality gate: `scripts/eval-ai.ts` scores drafts against a 30-pair golden set (`evals/golden.json`) for faithfulness (mean >= 0.8) and citation precision (mean >= 0.7)
+- Kill switch: `AI_ENABLED=false` disables all `/api/ai/*` endpoints (they return 503)
 
-### 1. Landing Feed & Home Dashboard (`/`)
-The primary interface provides an aggregated stream of forum queries sorted using non-destructive filters.
-* **Persistent Sidebars:** Implements a dual-column layout wrapper. The left sidebar houses macro routing utilities, while the right highlights `Top Questions` and `Popular Tags`.
-* **Stateful View Toggles:** Includes quick-filter tabs (`Newest`, `Recommended`, `Frequent`, `Unanswered`) that seamlessly update the UI state.
-* **Authentication Fallbacks:** Features modular login and registration prompts dynamically pinned to the bottom of the navigation stream for unauthenticated traffic.
+## Tech stack
 
-🖼️ **Interface View:**
-![Home Dashboard](./public/assets/Screenshot_055304.png)
+| Area | Technology |
+| --- | --- |
+| Framework | Next.js 16.4.6 (App Router, React 19.3.1) |
+| Language | TypeScript 5 |
+| Styling | Tailwind CSS 4.3.5 (CSS-first theme in `app/globals.css`), shadcn/ui + Radix UI |
+| Database | MongoDB Atlas via Mongoose 9.12.1 |
+| Auth | Clerk 7.9.26 (authentication, webhooks) |
+| Validation | Zod 4.6.7 |
+| Editor | TinyMCE 8.10.2 (`@tinymce/tinymce-react` 6.3.1) |
+| AI | Vercel AI SDK 5.0.289, `@google/genai` 2.32.0; Gemini 2.5 Flash, gemini-embedding-2 |
+| MCP | `@modelcontextprotocol/sdk` 1.32.2 |
+| Cache / rate limit | Upstash Redis 1.41.0, `@upstash/ratelimit` 2.2.1 |
+| Testing | Vitest 4 |
+| Linting | ESLint 9 (flat config) |
 
----
+## Getting started
 
-### 2. Multi-Tier Global Search Overlay
-An advanced lookup interface capable of scraping indexed entries matching a unified keyword.
-* **Interactive Filtering Array:** Leverages sub-type selectors allowing users to filter instantly by `Question`, `Answer`, `User`, or `Tag`.
-* **URL Parameter Syncing:** Pushes real-time search terms directly into the browser path query (`/?global=react`), making exact search views instantly shareable and bookmarkable.
-* **Visual Categorization:** Dynamically maps search results with contextual icons based on record type.
+### Prerequisites
 
-🖼️ **Interface View:**
-![Global Search Component](./public/assets/Screenshot_101.png)
+- Node.js 24 (see `.nvmrc`) and npm
+- A MongoDB Atlas cluster (M0 free tier works, including Atlas Vector Search)
+- A Clerk application (sign-up/sign-in + webhook)
+- A Google AI Studio API key for Gemini
 
----
+### Setup
 
-### 3. Community Contributor Directory (`/community`)
-A grid-based directory built to showcase platform contributors and encourage collaboration.
-* **Predictive Matching Inputs:** Includes search bars to find profiles by name or handle.
-* **User Profile Cards:** Displays structured components highlighting the contributor's name, unique username handle, and technical stack focus areas.
-* **Custom Metric Sorting:** Features dropdown filters to arrange cards by criteria like activity or registration dates.
+```bash
+git clone https://github.com/Mr-armanalam/dev_overflow.git
+cd dev-overflow
+npm ci
+cp .env.example .env.local
+```
 
-🖼️ **Interface View:**
-![Community Layout](./public/assets/Screenshot_064115.png)
+Fill in `.env.local` (all values are server-only except the two `NEXT_PUBLIC_*` keys, which are public by design):
 
----
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `MONGODB_URL` | Yes | Atlas connection string |
+| `GEMINI_API_KEY` | Yes | Google AI Studio key |
+| `WEBHOOK_SECRET` | Yes | Clerk webhook signing secret |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key |
+| `CLERK_SECRET_KEY` | Yes | Clerk secret key |
+| `NEXT_PUBLIC_tINY_EDITOR_API_KEY` | Yes | TinyMCE cloud API key |
+| `AI_ENABLED` | No | Set to `false` to disable all AI endpoints (default: enabled) |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | No | Enable AI caching and burst limits; the app works without them |
 
-### 4. Rich-Text Question Formulation Suite (`/ask-question`)
-A comprehensive, form-validated interface designed to gather structured technical questions.
-* **Workspace:** Integrates a responsive TinyMCE cloud workspace supporting multi-line code styling, structural heading tabs, and live text formats.
-* **Automated Tag Tokenizer:** Features an input processor that converts typed keys or commas into atomic visual tag components.
-* **Validation Bounds Engine:** Enforces client-side string limits, displaying inline layout warnings if title or body inputs fall below professional thresholds.
+Never commit real values, and never put a secret in a `NEXT_PUBLIC_*` variable — those values are inlined into the client bundle.
 
-🖼️ **Interface View:**
-![Ask Question Form](./public/assets/Screenshot_9.png)
+```bash
+npm run dev     # http://localhost:3000
+```
 
----
+```bash
+npm run build
+npm run start
+```
 
-### 5. Collection Vault Portfolio (`/collections`)
-An isolated collection interface allowing logged-in developers to quickly access their bookmarked threads.
-* **User-Specific Content Feeds:** Displays a list of questions flagged by the current session's profile.
-* **Asynchronous Un-saving Rails:** Allows immediate bookmarked toggling with asynchronous interface cleanup, removing items from the dashboard without a full layout re-render.
+## Scripts
 
-🖼️ **Interface View:**
-![Saved Collections View](./public/assets/Screenshot_7.png)
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Start the development server |
+| `npm run build` | Production build |
+| `npm run start` | Start the production server |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Vitest (`vitest run`) |
+| `npm run backfill:embeddings` | Embed existing questions/answers into `question_embeddings` (one-off, see `docs/rag-setup.md`) |
+| `npm run eval:ai` | Score answer drafts against the golden set (see `docs/evals.md`) |
 
----
+## Project structure
 
-### 6. Contributor Analytics & Profile Hub (`/profile/[id]`)
-A beautifully structured profile dashboard engineered to display a developer's track record, reputation score, and overall platform footprint.
-* **Consolidated Metric Tiles:** Highlights numerical summaries showing total submitted queries and answers.
-* **Tiered Badge Tracks:** Computes activity targets to display **Gold**, **Silver**, or **Bronze** achievement rewards.
-* **Activity Stream Anchors:** Features integrated child navigation links to swap historical views between authored `Top Posts` and community `Answers`.
+```text
+app/                  Next.js App Router — (root) route group, API routes, layouts
+  (root)/             Home, ask-question, question/[id], tags, community, profile, collection, admin
+  api/                Route handlers: ai/draft, ai/similar, ai/tags, mcp, webhook, chatgpt
+components/           React components — forms, cards, shared layout, admin, shadcn/ui primitives
+context/              Theme provider
+lib/                  Server actions, Mongoose connection, validation, auth helpers
+  ai/                 AI layer: provider + router, prompts, RAG, guardrails, cache, budgets, MCP
+database/             Mongoose models (User, Question, Answer, Tag, Interaction, AiUsageLog, ...)
+docs/                 Setup guides: RAG (Atlas Vector Search), Upstash, evals
+scripts/              Backfill + eval CLIs (run with tsx)
+evals/                Golden set for answer-draft evals
+public/               Static assets (icons, Open Graph images)
+```
 
-🖼️ **Interface View:**
-![User Profile Dashboard](./public/assets/Screenshot_064447.png)
+## AI setup
 
----
+The AI features work once `MONGODB_URL` and `GEMINI_API_KEY` are set; Upstash is optional. Details live in the docs:
 
-### 7. Account Configuration & Credential Mapping
-An isolated modal management window providing secure administrative adjustments.
-* **Clerk Session Mirroring:** Securely serves validated primary identity tags, associated email accounts, and user images.
-* **OAuth Integrity Diagnostics:** Displays clear connectivity markers for linked platforms, including explicit notification links to easily reconnect third-party sign-ins like Google.
-
-🖼️ **Interface View:**
-![Account Management Modal](./public/assets/Screenshot_8.png)
-
----
-
-## 🛠️ Complete Technical Stack Architecture
-
-| Layer | Selected Technology | Structural Purpose |
-| :--- | :--- | :--- |
-| **Framework Base** | `Next.js 14+ (App Router)` | Renders high-performance server components, manages optimized build caching, and structures file-system page routes. |
-| **Styling Framework**| `Tailwind CSS` | Utility-first architecture for building fluid, responsive layouts and native dark mode themes. |
-| **Authentication Engine** | `Clerk Identity Core` | Securely manages active user sessions, JSON Web Token handles, custom metadata, and secure social logins. |
-| **Rich Text Input** | `@tinymce/tinymce-react` | Provides an enterprise-grade developer input workspace configured for multi-line block code formatting. |
-| **State Sync Engine** | `URL SearchParams Web API` | Keeps lookup queries and tab active values cleanly synchronized with browser paths for frictionless sharing. |
-
----
-
-## 📂 Core Directory Structure
-
-* **`dev-overflow/`** — Root project folder
-  * **`app/`** — Next.js App Router root layout and primary page configurations
-    * **`(root)/`** — Main application route group layout wrapper
-      * **`ask-question/`** — Interface for validating and creating queries
-      * **`collection/`** — Private layout tracking personal saved threads
-      * **`community/`** — Networking index displaying platform contributors
-      * **`profile/`** — Dynamic developer statistics and metric tracking
-      * **`page.tsx`** — Interactive core forum landing hub and global streams
-    * **`layout.tsx`** — Global context providers and root application viewport
-    * **`globals.css`** — Shared Tailwind CSS rules and style architecture
-  * **`components/`** — Modular layout architecture blocks
-    * **`shared/`** — Context navigation layout blocks (`LeftSidebar`, `RightSidebar`, `Navbar`)
-    * **`ui/`** — Reusable layout primitives (`Buttons`, `Badges`, Form components)
-  * **`context/`** — Global React state context provider declarations
-  * **`public/`** — Static asset repository hosting icons and design assets
-  * **`package.json`** — Core project configuration and script commands
-  * **`tailwind.config.ts`** — Custom layout theme rules and color scheme configurations
-
----
-
-
-## ⚙️ Local Workspace Initialization
-
-Follow these simple steps to spin up a production-grade instance of the platform in your local workspace:
-
-1. **Clone the Repository:**
-   ```bash
-   git clone [https://github.com/your-username/dev-overflow.git](https://github.com/Mr-armanalam/dev-overflow.git)
-   cd dev-overflow
+- [docs/rag-setup.md](docs/rag-setup.md) — create the Atlas vector index, run the backfill, smoke-test RAG citations
+- [docs/upstash-setup.md](docs/upstash-setup.md) — create a free Upstash Redis database for the AI cache and rate limits
+- [docs/evals.md](docs/evals.md) — run and extend the answer-draft quality gate
