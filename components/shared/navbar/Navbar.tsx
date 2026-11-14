@@ -1,11 +1,11 @@
 import {
-  SignedIn,
-  //  SignedOut, SignInButton,
+  Show,
+  //  Show, SignInButton,
   UserButton,
 } from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
+import React, { Suspense } from "react";
 import Theme from "./Theme";
 import MobileNav from "./MobileNav";
 import GlobalSearch from "../search/GlobalSearch";
@@ -24,13 +24,22 @@ const Navbar = () => {
           Dev <span className="text-primary-500">Overflow</span>
         </p>
       </Link>
-      <GlobalSearch />
+      {/* GlobalSearch reads useSearchParams(), which Next requires
+          inside a Suspense boundary during prerender. Clerk 7's auth()
+          no longer forces every (root) page dynamic the way v6 did, so
+          statically-prerendered pages (e.g. /admin/ai) hit this without
+          the boundary — the P4 base on Clerk 6 built only because every
+          page happened to be dynamic. No visual change: the fallback
+          renders nothing while the search input hydrates. */}
+      <Suspense>
+        <GlobalSearch />
+      </Suspense>
       <div className="flex-between gap-5 ">
         <Theme />
-        {/* <SignedOut>
+        {/* <Show when="signed-out">
           <SignInButton fallbackRedirectUrl={"/"} />
-        </SignedOut> */}
-        <SignedIn>
+        </Show> */}
+        <Show when="signed-in">
           <UserButton
             appearance={{
               elements: {
@@ -41,7 +50,7 @@ const Navbar = () => {
               },
             }}
           />
-        </SignedIn>
+        </Show>
 
         <MobileNav />
       </div>

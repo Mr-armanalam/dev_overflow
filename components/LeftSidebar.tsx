@@ -5,7 +5,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { SignedOut, useAuth } from "@clerk/nextjs";
+import { Show, useAuth } from "@clerk/nextjs";
 import { Button } from "./ui/button";
 import { useCan } from "@/lib/auth/use-permissions";
 
@@ -83,7 +83,7 @@ const LeftSidebar = () => {
         })}
       </div>
 
-      <SignedOut>
+      <Show when="signed-out">
             <div className="flex flex-col gap-3">
                 <Link href={"/sign-in"}>
                   <Button className="small-medium btn-secondary min-h-[41px] w-full rounded-lg px-4 py-3 shadow-none">
@@ -110,7 +110,7 @@ const LeftSidebar = () => {
                   </Button>
                 </Link>
             </div>
-          </SignedOut>
+          </Show>
     </section>
   );
 };

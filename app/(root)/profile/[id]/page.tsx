@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { getUserInfo } from "@/lib/actions/user.action";
 // import { URLProps } from "@/types";
-import { SignedIn } from "@clerk/nextjs";
+import { Show } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import Image from "next/image";
 import Link from "next/link";
@@ -82,7 +82,7 @@ const Page = async (props: { params: Params, searchParams: SearchParams}) => {
         </div>
 
         <div className="flex justify-end max-sm:mb-5 max-sm:w-full sm:mt-3">
-          <SignedIn>
+          <Show when="signed-in">
             {clerkId === userInfo.user.clerkId && (
               <Link href={"/profile/edit"}>
                 <Button
@@ -93,7 +93,7 @@ const Page = async (props: { params: Params, searchParams: SearchParams}) => {
                 </Button>
               </Link>
             )}
-          </SignedIn>
+          </Show>
         </div>
       </div>
 

@@ -4,7 +4,7 @@ import React from "react";
 import RenderTag from "../shared/RenderTag";
 import Metric from "../Metric";
 import { formatNumber, getTimestamp } from "@/lib/utils";
-import { SignedIn } from "@clerk/nextjs";
+import { Show } from "@clerk/nextjs";
 import EditDeleteAction from "../shared/EditDeleteAction";
 
 export interface QcProps {
@@ -52,11 +52,11 @@ const QuestionCard = ({
             </Link>
         </div>
         
-        <SignedIn>
+        <Show when="signed-in">
           {showActionButton && (
             <EditDeleteAction type="Question" itemId={JSON.stringify(_id)} />
           )}
-        </SignedIn>
+        </Show>
 
     </div>
 
