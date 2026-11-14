@@ -86,7 +86,7 @@ redeploy.
 
 | Cache | Key | TTL |
 | --- | --- | --- |
-| Draft (exact) | SHA-256 of `answer-draft` v1 + normalised question | 24 h |
+| Draft (exact) | SHA-256 of `answer-draft` v2 + normalised question | 24 h |
 | Tags (exact) | SHA-256 of `tag-suggest` v1 + normalised title/body | 24 h |
 | Duplicate verdict (exact) | SHA-256 of `duplicate-detect` v1 + title/body + candidate ids | 24 h |
 | Draft (semantic) | question id, looked up when a new question is ≥ 0.95 cosine-similar to a cached one | 24 h |
