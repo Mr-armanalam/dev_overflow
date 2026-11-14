@@ -157,10 +157,7 @@ const page = async (props: { params: Params, searchParams: SearchParams}) => {
       />
 
       {mongoUser ? (
-        <Answer
-          question={result.content}
-          questionId={JSON.stringify(result._id)}
-        />
+        <Answer questionId={JSON.stringify(result._id)} />
       ) : (
         <p className="paragraph-regular text-dark400_light800 mt-10">
           <Link href="/sign-in" className="text-primary-500">

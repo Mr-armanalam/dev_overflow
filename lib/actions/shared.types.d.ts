@@ -6,6 +6,10 @@ export interface CreateAnswerParams {
   // inside createAnswer. Never accept it from the client.
   question: string; // Question ID
   path: string;
+  /** True when the content came from an AI draft. AI-assisted answers
+   *  earn no reputation (Arman's decision, 13 Nov 2026) and render an
+   *  "AI-assisted" badge. */
+  aiAssisted?: boolean;
 }
 export interface GetAnswersParams {
   questionId: string;
