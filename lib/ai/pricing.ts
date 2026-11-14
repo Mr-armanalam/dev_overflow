@@ -11,10 +11,10 @@ export const AI_PRICING_USD_PER_1M_TOKENS: Record<string, {
   output: number;
 }> = {
   "gemini-2.5-flash": { input: 0.3, output: 2.5 },
-  // text-embedding-004: $0.00002 / 1K tokens = $0.02 / 1M tokens, input
-  // only (embeddings have no output tokens). APPROXIMATE — verify
+  // gemini-embedding-2: $0.20 / 1M tokens, input only
+  // (embeddings have no output tokens). APPROXIMATE — verify
   // against Google AI Studio pricing before quoting costs anywhere.
-  "text-embedding-004": { input: 0.02, output: 0 },
+  "gemini-embedding-2": { input: 0.2, output: 0 },
 };
 
 export function estimateCostUsd(

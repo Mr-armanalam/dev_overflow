@@ -41,7 +41,7 @@ async function logIndexFailure(
       userId,
       promptId: "embedding",
       promptVersion: 1,
-      modelName: "text-embedding-004",
+      modelName: "gemini-embedding-2",
       task: "embedding",
       status: "error",
       errorCode: `INDEX_ERROR question=${questionId} ${

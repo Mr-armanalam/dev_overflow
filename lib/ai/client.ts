@@ -83,10 +83,12 @@ export interface LlmProvider {
     scrubTextChunks?: (chunk: string) => string;
   }): Promise<ReturnType<typeof streamText>>;
   /**
-   * Embed one or more texts with text-embedding-004 (768-d). Same
-   * retry/timeout discipline as the text calls. The SDK splits large
-   * batches itself; callers keep batches small anyway (a question +
-   * its top answers is ≤ 4 texts).
+   * Embed one or more texts with gemini-embedding-2, requesting
+   * 768-d output via `outputDimensionality` (Matryoshka truncation)
+   * to match the 768-d Atlas vector index. Same retry/timeout
+   * discipline as the text calls. The SDK splits large batches
+   * itself; callers keep batches small anyway (a question + its top
+   * answers is ≤ 4 texts).
    */
   embedTexts(texts: string[]): Promise<LlmEmbedResponse>;
 }
@@ -231,12 +233,18 @@ class GeminiProvider implements LlmProvider {
     }
     const google = createGoogleGenerativeAI({ apiKey });
     const embeddingModel = google.textEmbeddingModel(
-      "text-embedding-004"
+      "gemini-embedding-2"
     );
     const result = await withRetries(() =>
       embedMany({
         model: embeddingModel,
         values: texts,
+        // gemini-embedding-2 is 3072-d by default; request 768-d
+        // output (Matryoshka truncation) to match the Atlas index.
+        // No taskType: the same call embeds both document chunks
+        // and the retrieval query, so one task type would be wrong
+        // for one of them.
+        providerOptions: { google: { outputDimensionality: 768 } },
         maxRetries: 0,
         abortSignal: AbortSignal.timeout(AI_CALL_TIMEOUT_MS),
       })
