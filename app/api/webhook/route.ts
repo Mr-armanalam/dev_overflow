@@ -31,9 +31,10 @@ export async function POST(req: Request) {
     });
   }
 
-  // Get the body
-  const payload = await req.json();
-  const body = JSON.stringify(payload);
+  // Verify against the RAW body: Svix signs the raw bytes, and
+  // re-serialising JSON (key order / whitespace) can invalidate the
+  // signature and reject legitimate Clerk events.
+  const body = await req.text();
 
   // Create a new Svix instance with your secret.
   const wh = new Webhook(WEBHOOK_SECRET);
@@ -57,47 +58,74 @@ export async function POST(req: Request) {
 //   const { id } = evt.data;
   const eventType = evt.type;
   // console.log(eventType);
+  // A Clerk user may have no primary email and no username (e.g. an
+  // OAuth sign-up that never set one). Guard both, and build the
+  // display name from the parts that exist, so user creation can
+  // never crash the webhook on email_addresses[0] / username!.
+  const { id, email_addresses, image_url, username, first_name, last_name } =
+    evt.data as {
+      id?: string;
+      email_addresses?: { email_address: string }[];
+      image_url: string;
+      username?: string | null;
+      first_name?: string | null;
+      last_name?: string | null;
+    };
+  const primaryEmail = email_addresses?.[0]?.email_address;
+  const safeUsername = username || (id ? `user_${id}` : "user");
+  const displayName =
+    [first_name, last_name].filter(Boolean).join(" ") || safeUsername;
+
   if(eventType === 'user.created'){
-    const {id, email_addresses, image_url, username, first_name, last_name} = evt.data;
+    if (!id || !primaryEmail) {
+      // Cannot create a user without a Clerk id and a primary email
+      // (both are required in the User model). Acknowledge so Clerk
+      // does not retry a webhook that can never succeed.
+      return NextResponse.json({message: 'OK — skipped: no primary email'})
+    }
 
     // Create a new user in your database
     // const mongoUser =
     await createUser({
         clerkId: id,
-        name: `${first_name}${last_name ? `${last_name}` : ''}`,
-        username: username!,
-        email: email_addresses[0].email_address,
+        name: displayName,
+        username: safeUsername,
+        email: primaryEmail,
         picture: image_url,
     })
 
-    return NextResponse.json({message: 'OK', username: username})
+    return NextResponse.json({message: 'OK', username: safeUsername})
   }
-  
+
   else if(eventType === 'user.updated'){
-    const {id, email_addresses, image_url, username, first_name, last_name} = evt.data;
+    if (!id || !primaryEmail) {
+      return NextResponse.json({message: 'OK — skipped: no primary email'})
+    }
 
     // Create a new user in your database
-    // const mongoUser = 
+    // const mongoUser =
     await updateUser({
         clerkId: id,
         updateData: {
-            name: `${first_name}${last_name? `${last_name}` : ''}`,
-            username: username!,
-            email: email_addresses[0].email_address,
+            name: displayName,
+            username: safeUsername,
+            email: primaryEmail,
             picture: image_url,
         },
         path: `/profile/${id}`
-        
+
     })
 
-    return NextResponse.json({message: 'OK', username: username})
+    return NextResponse.json({message: 'OK', username: safeUsername})
   }
 
   if(eventType === 'user.deleted'){
-    const {id} = evt.data;
+    if (!id) {
+      return new Response("Error occurred -- no user id", { status: 400 });
+    }
 
     const deletedUser = await deleteUser({
-        clerkId: id!,
+        clerkId: id,
     })
      
     return NextResponse.json({message: 'OK', user: deletedUser})
