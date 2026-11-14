@@ -28,13 +28,19 @@ export type AiTask =
   | "answer-draft"
   | "tag-suggest"
   | "embedding"
-  | "duplicate-detect";
+  | "duplicate-detect"
+  | "mcp";
 
 export type AiFeedback = "helpful" | "not_helpful";
 
 export interface IAiUsageLog extends Document {
   userId: Schema.Types.ObjectId;
-  actorType: "user";
+  /**
+   * "user" — a signed-in web user (P1). "api-key" — an MCP client
+   * authenticated with an ApiKey (P4). MCP rows carry no token counts
+   * (the tools are read-only DB/RAG calls, not provider calls).
+   */
+  actorType: "user" | "api-key";
   promptId: string;
   promptVersion: number;
   modelName: string;
@@ -53,14 +59,24 @@ export interface IAiUsageLog extends Document {
 
 const AiUsageLogSchema = new Schema<IAiUsageLog>({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  actorType: { type: String, enum: ["user"], default: "user" },
+  actorType: {
+    type: String,
+    enum: ["user", "api-key"],
+    default: "user",
+  },
   promptId: { type: String, required: true },
   promptVersion: { type: Number, required: true },
   modelName: { type: String, required: true },
   provider: { type: String, enum: ["gemini"], default: "gemini" },
   task: {
     type: String,
-    enum: ["answer-draft", "tag-suggest", "embedding", "duplicate-detect"],
+    enum: [
+      "answer-draft",
+      "tag-suggest",
+      "embedding",
+      "duplicate-detect",
+      "mcp",
+    ],
     required: true,
   },
   inputTokens: { type: Number, default: 0 },

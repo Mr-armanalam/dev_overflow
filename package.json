@@ -7,13 +7,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "backfill:embeddings": "tsx scripts/backfill-embeddings.ts"
+    "backfill:embeddings": "tsx scripts/backfill-embeddings.ts",
+    "eval:ai": "tsx scripts/eval-ai.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.111",
     "@clerk/nextjs": "^6.37.3",
     "@google/genai": "^2.32.0",
     "@hookform/resolvers": "^3.9.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-icons": "^1.3.1",
     "@radix-ui/react-label": "^2.1.0",

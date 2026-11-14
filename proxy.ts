@@ -5,11 +5,16 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/', 
   '/api/webhook',
-  '/question/:id',
+  // MCP clients authenticate with Bearer API keys, never Clerk
+  // cookies — the route enforces its own auth (lib/ai/mcp/auth.ts),
+  // so Clerk middleware must not redirect them to sign-in.
+  '/api/mcp',
+   'question/:id',
   '/tags',
   '/tags/:id',
-  '/profile/:id',
+  '/profile:id',
   '/community',
+  '/jobs'
 ])
 export default clerkMiddleware(async (auth, request) => {
   if (!isPublicRoute(request)) {

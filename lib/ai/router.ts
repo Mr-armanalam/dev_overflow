@@ -16,6 +16,10 @@ export const AI_MODEL_FOR_TASK: Record<AiTask, string> = {
   // (text-embedding-004 was shut down by Google on Jan 14, 2026.)
   embedding: "gemini-embedding-2",
   "duplicate-detect": "gemini-2.5-flash",
+  // MCP tool calls are not provider calls (read-only DB/RAG calls),
+  // so there is no model to route to. "none" keeps the record total
+  // over AiTask; getModelForTask("mcp") is never called.
+  mcp: "none",
 };
 
 export function getModelForTask(task: AiTask): string {

@@ -14,6 +14,8 @@ import { estimateCostUsd } from "./pricing";
 
 export interface CreateUsageLogInput {
   userId: Types.ObjectId;
+  /** P4: MCP rows are logged with actorType "api-key". */
+  actorType?: "user" | "api-key";
   promptId: string;
   promptVersion: number;
   modelName: string;
@@ -33,7 +35,7 @@ export async function createUsageLog(
   await connectToDatabase();
   return AiUsageLog.create({
     userId: input.userId,
-    actorType: "user",
+    actorType: input.actorType ?? "user",
     promptId: input.promptId,
     promptVersion: input.promptVersion,
     modelName: input.modelName,
