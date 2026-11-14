@@ -34,7 +34,6 @@ interface Props {
 const Question = ({type, questionDetails}: Props) => {
 
   const { mode } = useTheme(); 
-  const editorRef = useRef(null);
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
@@ -378,8 +377,6 @@ const Question = ({type, questionDetails}: Props) => {
               <FormControl className="mt-3.5">
                 <Editor
                   apiKey={process.env.NEXT_PUBLIC_tINY_EDITOR_API_KEY}
-                  // @ts-expect-error " current"
-                  onInit={(_evt, editor) => (editorRef.current = editor)}
                   onBlur={field.onBlur}
                   onEditorChange={(content) => field.onChange(content)}
                   initialValue={parsedQuestionDetails?.content || ''}
