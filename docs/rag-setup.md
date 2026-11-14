@@ -61,8 +61,14 @@ this, so the backfill is a one-off.
 - **Corpus:** question title + body + top ≤3 answers (net score ≥ 0).
   One chunk per question / answer, ~1,500 chars, split on Markdown
   headings when longer. Tag names ride inside the question chunk text.
-- **Embeddings:** `text-embedding-004` (768-d) via the same
-  `LlmProvider` path as the P1 draft calls (`lib/ai/client.ts`).
+- **Embeddings:** `gemini-embedding-2`, requested at 768 dimensions
+  via `outputDimensionality` (Matryoshka truncation) to match the
+  Atlas index, via the same `LlmProvider` path as the P1 draft calls
+  (`lib/ai/client.ts`). (`text-embedding-004` was shut down by Google
+  on Jan 14, 2026 — the backfill 404'd on it, hence this model.
+  `gemini-embedding-001` was considered and rejected: it already
+  carries a May 14, 2028 shutdown date, with `gemini-embedding-2`
+  as Google's recommended replacement.)
 - **Retrieval:** `$vectorSearch` top-12 by cosine → rerank
   `0.6·cosine + 0.25·(upvotes normalised) + 0.15·recency decay` → top-5.
 - **Indexing:** fire-and-forget from `createQuestion` / `createAnswer` /

@@ -17,7 +17,8 @@ export interface IQuestionEmbedding extends Document {
   questionId: Types.ObjectId;
   answerId?: Types.ObjectId;
   chunkText: string;
-  /** text-embedding-004 output: exactly 768 dimensions. */
+  /** gemini-embedding-2 output truncated to exactly 768 dimensions
+   * via `outputDimensionality`, to match the Atlas vector index. */
   embedding: number[];
   tags: string[];
   /** Upvote count of the source question/answer, used by the reranker. */
