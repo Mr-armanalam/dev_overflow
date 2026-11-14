@@ -16,10 +16,21 @@ import Tag from "@/database/tag.model";
 import { getTopPopularTags } from "@/lib/actions/tag.action";
 import { isAiEnabled } from "@/lib/ai/limits";
 import {
+  AI_CACHE_TTLS_SECONDS,
+  exactCacheKey,
+  getExactCache,
+  setExactCache,
+} from "@/lib/ai/cache";
+import { enforceAiBurstLimit } from "@/lib/ai/ratelimit";
+import {
   AiTagSuggestInputSchema,
-  detectPromptInjection,
+  screenAiInput,
   scrubPII,
 } from "@/lib/ai/guardrails/input";
+import {
+  STRUCTURED_OUTPUT_REPAIR_INSTRUCTION,
+  withStructuredOutputRepair,
+} from "@/lib/ai/guardrails/output";
 import {
   TAG_SUGGEST_V1,
   buildTagSuggestPrompt,
@@ -33,13 +44,6 @@ const TagSuggestResponseSchema = z.object({
 });
 
 export const POST = async (request: Request) => {
-  if (!isAiEnabled()) {
-    return NextResponse.json(
-      { error: "AI features are temporarily unavailable" },
-      { status: 503 }
-    );
-  }
-
   let mongoUser;
   try {
     mongoUser = await getAuthenticatedUser();
@@ -50,6 +54,7 @@ export const POST = async (request: Request) => {
     );
   }
   const userId = mongoUser._id as Types.ObjectId;
+  const model = getModelForTask("tag-suggest");
 
   let body: unknown;
   try {
@@ -65,6 +70,69 @@ export const POST = async (request: Request) => {
     return NextResponse.json(
       { error: "Invalid request", issues: parsed.error.flatten() },
       { status: 400 }
+    );
+  }
+
+  // Per-IP burst limit (P3). Skipped entirely when Redis is not
+  // configured; a failed check fails open (allows the request).
+  const burst = await enforceAiBurstLimit(
+    request,
+    userId,
+    "tag-suggest",
+    TAG_SUGGEST_V1.id,
+    TAG_SUGGEST_V1.version,
+    model
+  );
+  if (burst.limited) {
+    return burst.response;
+  }
+
+  const title = scrubPII(parsed.data.title);
+  const bodyText = scrubPII(parsed.data.body);
+  const { flagged } = screenAiInput(`${title}\n${bodyText}`);
+
+  // Exact cache (P3): same prompt version + same title/body. A hit
+  // serves the stored tags with no provider call and no budget
+  // consumption — even when the kill switch is on.
+  const cacheKey = exactCacheKey(
+    TAG_SUGGEST_V1.id,
+    TAG_SUGGEST_V1.version,
+    `${title}\n${bodyText}`
+  );
+  const cached = await getExactCache<{
+    tags: string[];
+    model: string;
+    promptId: string;
+    promptVersion: number;
+  }>(cacheKey);
+  if (cached) {
+    try {
+      const log = await createUsageLog({
+        userId,
+        promptId: TAG_SUGGEST_V1.id,
+        promptVersion: TAG_SUGGEST_V1.version,
+        modelName: model,
+        task: "tag-suggest",
+        status: "success",
+        cacheHit: true,
+      });
+      return NextResponse.json(
+        { ...cached, fallback: false },
+        { headers: { "x-ai-cache": "exact", "x-ai-usage-log-id": String(log._id) } }
+      );
+    } catch (error) {
+      console.error("Failed to log cached AI tag call", error);
+      return NextResponse.json(
+        { ...cached, fallback: false },
+        { headers: { "x-ai-cache": "exact" } }
+      );
+    }
+  }
+
+  if (!isAiEnabled()) {
+    return NextResponse.json(
+      { error: "AI features are temporarily unavailable" },
+      { status: 503 }
     );
   }
 
@@ -92,10 +160,6 @@ export const POST = async (request: Request) => {
     );
   }
 
-  const title = scrubPII(parsed.data.title);
-  const bodyText = scrubPII(parsed.data.body);
-  const flagged = detectPromptInjection(`${title}\n${bodyText}`);
-  const model = getModelForTask("tag-suggest");
   const startedAt = Date.now();
 
   let usageLog;
@@ -123,17 +187,25 @@ export const POST = async (request: Request) => {
     const existingNames = existingTags.map((tag) => tag.name);
 
     const provider = getLlmProvider();
-    const { object, usage, latencyMs } = await provider.generateObject({
-      system: TAG_SUGGEST_V1.system,
-      prompt: buildTagSuggestPrompt({
-        title,
-        body: bodyText,
-        existingTags: existingNames.slice(0, 200),
-      }),
-      model,
-      schema: TagSuggestResponseSchema,
-      maxTokens: 256,
-    });
+    // Structured output with ONE repair retry (P3 output guardrail):
+    // a parse failure retries once with an explicit "valid JSON only"
+    // instruction, then fails soft (the outer catch returns 502).
+    const { object, usage, latencyMs } = await withStructuredOutputRepair(
+      (repair) =>
+        provider.generateObject({
+          system:
+            TAG_SUGGEST_V1.system +
+            (repair ? `\n\n${STRUCTURED_OUTPUT_REPAIR_INSTRUCTION}` : ""),
+          prompt: buildTagSuggestPrompt({
+            title,
+            body: bodyText,
+            existingTags: existingNames.slice(0, 200),
+          }),
+          model,
+          schema: TagSuggestResponseSchema,
+          maxTokens: 256,
+        })
+    );
 
     // Keep only tags that really exist, in their canonical casing.
     const byLower = new Map(
@@ -166,6 +238,23 @@ export const POST = async (request: Request) => {
       latencyMs,
       status: flagged ? "flagged" : "success",
     });
+
+    // Store model-derived tags in the exact cache (P3). The popular
+    // fallback is NOT cached — it is not a model result, and caching
+    // it would freeze "most popular tags" as the answer for this
+    // title for 24 h.
+    if (!fallback) {
+      await setExactCache(
+        cacheKey,
+        {
+          tags: finalTags,
+          model,
+          promptId: TAG_SUGGEST_V1.id,
+          promptVersion: TAG_SUGGEST_V1.version,
+        },
+        AI_CACHE_TTLS_SECONDS["tag-suggest"]
+      );
+    }
 
     return NextResponse.json({
       tags: finalTags,

@@ -1,4 +1,5 @@
 import { IUser } from "@/database/user.model";
+import type { UserRole } from "@/lib/auth/permissions";
 
 export interface CreateAnswerParams {
   content: string;
@@ -104,6 +105,9 @@ export interface CreateUserParams {
   username: string;
   email: string;
   picture: string;
+  /** RBAC role, synced from Clerk `publicMetadata.role` by the webhook.
+   *  Defaults to "user" in the schema when omitted. */
+  role?: UserRole;
 }
 export interface GetUserByIdParams {
   userId: string | null;

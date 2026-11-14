@@ -7,6 +7,7 @@ import {
   deleteUser,
   updateUser,
 } from "@/lib/actions/user-sync";
+import { roleFromPublicMetadata } from "@/lib/auth/permissions";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -31,10 +32,9 @@ export async function POST(req: Request) {
     });
   }
 
-  // Verify against the RAW body: Svix signs the raw bytes, and
-  // re-serialising JSON (key order / whitespace) can invalidate the
-  // signature and reject legitimate Clerk events.
-  const body = await req.text();
+  // Get the body
+  const payload = await req.json();
+  const body = JSON.stringify(payload);
 
   // Create a new Svix instance with your secret.
   const wh = new Webhook(WEBHOOK_SECRET);
@@ -58,74 +58,53 @@ export async function POST(req: Request) {
 //   const { id } = evt.data;
   const eventType = evt.type;
   // console.log(eventType);
-  // A Clerk user may have no primary email and no username (e.g. an
-  // OAuth sign-up that never set one). Guard both, and build the
-  // display name from the parts that exist, so user creation can
-  // never crash the webhook on email_addresses[0] / username!.
-  const { id, email_addresses, image_url, username, first_name, last_name } =
-    evt.data as {
-      id?: string;
-      email_addresses?: { email_address: string }[];
-      image_url: string;
-      username?: string | null;
-      first_name?: string | null;
-      last_name?: string | null;
-    };
-  const primaryEmail = email_addresses?.[0]?.email_address;
-  const safeUsername = username || (id ? `user_${id}` : "user");
-  const displayName =
-    [first_name, last_name].filter(Boolean).join(" ") || safeUsername;
-
   if(eventType === 'user.created'){
-    if (!id || !primaryEmail) {
-      // Cannot create a user without a Clerk id and a primary email
-      // (both are required in the User model). Acknowledge so Clerk
-      // does not retry a webhook that can never succeed.
-      return NextResponse.json({message: 'OK — skipped: no primary email'})
-    }
+    const {id, email_addresses, image_url, username, first_name, last_name, public_metadata} = evt.data;
 
     // Create a new user in your database
     // const mongoUser =
     await createUser({
         clerkId: id,
-        name: displayName,
-        username: safeUsername,
-        email: primaryEmail,
+        name: `${first_name}${last_name ? `${last_name}` : ''}`,
+        username: username!,
+        email: email_addresses[0].email_address,
         picture: image_url,
+        // RBAC (design §7.2): the Clerk publicMetadata.role is the
+        // source of truth; an absent/invalid value is a plain user.
+        role: roleFromPublicMetadata(public_metadata),
     })
 
-    return NextResponse.json({message: 'OK', username: safeUsername})
+    return NextResponse.json({message: 'OK', username: username})
   }
-
+  
   else if(eventType === 'user.updated'){
-    if (!id || !primaryEmail) {
-      return NextResponse.json({message: 'OK — skipped: no primary email'})
-    }
+    const {id, email_addresses, image_url, username, first_name, last_name, public_metadata} = evt.data;
 
     // Create a new user in your database
-    // const mongoUser =
+    // const mongoUser = 
     await updateUser({
         clerkId: id,
         updateData: {
-            name: displayName,
-            username: safeUsername,
-            email: primaryEmail,
+            name: `${first_name}${last_name? `${last_name}` : ''}`,
+            username: username!,
+            email: email_addresses[0].email_address,
             picture: image_url,
+            // RBAC (design §7.2): role changes in Clerk Dashboard
+            // (publicMetadata.role) flow through on user.updated.
+            role: roleFromPublicMetadata(public_metadata),
         },
         path: `/profile/${id}`
-
+        
     })
 
-    return NextResponse.json({message: 'OK', username: safeUsername})
+    return NextResponse.json({message: 'OK', username: username})
   }
 
   if(eventType === 'user.deleted'){
-    if (!id) {
-      return new Response("Error occurred -- no user id", { status: 400 });
-    }
+    const {id} = evt.data;
 
     const deletedUser = await deleteUser({
-        clerkId: id,
+        clerkId: id!,
     })
      
     return NextResponse.json({message: 'OK', user: deletedUser})

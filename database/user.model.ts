@@ -1,4 +1,5 @@
 import {Schema, models, model, Document} from 'mongoose'
+import type { UserRole } from "@/lib/auth/permissions";
 
 export interface IUser extends Document { 
     clerkId: string;
@@ -11,6 +12,10 @@ export interface IUser extends Document {
     location?: string;
     portfolioWebsite?: string;
     reputation?: number;
+    /** RBAC role (design §7.2). Synced from Clerk `publicMetadata.role`
+     *  by the webhook; absent on users created before roles existed,
+     *  which the permission matrix treats as "user". */
+    role?: UserRole;
     saved: Schema.Types.ObjectId[];
     joinedAt: Date;
 }
@@ -26,6 +31,11 @@ const UserSchema = new Schema ({
     location: { type: String },
     portfolioWebsite: { type: String },
     reputation: { type: Number, default: 0 },
+    role: {
+      type: String,
+      enum: ["user", "moderator", "admin"],
+      default: "user",
+    },
     saved: [{ type: Schema.Types.ObjectId, ref: 'Question' }], 
     joinedAt: { type: Date, default: Date.now },
 })
