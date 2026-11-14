@@ -1,5 +1,7 @@
 import User from "@/database/user.model";
 import Question from "@/database/question.model";
+import Answer from "@/database/answer.model";
+import Interaction from "@/database/interaction.model";
 import { connectToDatabase } from "../mongoose";
 import { revalidatePath } from "next/cache";
 import {
@@ -51,21 +53,35 @@ export async function deleteUser(params: DeleteUserParams) {
 
     const { clerkId } = params;
 
+    // findOneAndDelete already deletes the user — exactly once.
+    // (Previously a second findByIdAndDelete ran afterwards.)
     const user = await User.findOneAndDelete({ clerkId });
 
     if (!user) {
       throw new Error("User not found");
     }
 
-    // const userQuestionIds =
-    await Question.find({ author: user._id }).distinct("_id");
+    const userQuestionIds = await Question.find({ author: user._id }).distinct("_id");
+
+    // The user's own answers, plus answers on the questions being
+    // deleted (otherwise they would be orphaned).
+    await Answer.deleteMany({
+      $or: [
+        { author: user._id },
+        { question: { $in: userQuestionIds } },
+      ],
+    });
+
+    // The user's interactions (views, votes, asks) ...
+    await Interaction.deleteMany({ user: user._id });
 
     await Question.deleteMany({ author: user._id });
 
-    ///////////// Delete usr comment and anser ///////////////
-
-    // const deletedUser =
-    await User.findByIdAndDelete(user._id);
+    // ... and remove them from other users' saved lists.
+    await User.updateMany(
+      { saved: user._id },
+      { $pull: { saved: user._id } }
+    );
 
     return user;
   } catch (error) {

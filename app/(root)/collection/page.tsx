@@ -9,6 +9,7 @@ import { QuestionFilters } from "@/constants/filters";
 import { getSavedQuestion } from "@/lib/actions/user.action";
 // import { SearchParamsProps } from "@/types";
 import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import React from "react";
 
 
@@ -19,12 +20,15 @@ const Collection = async (prop: {searchParams : SearchParams} ) => {
 
     const { userId } = await auth();
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    if (!userId) null;
+    // Collections are a signed-in feature — redirect instead of the
+    // previous no-op `if (!userId) null;` guard, which let the page
+    // keep going and pass userId! through.
+    if (!userId) redirect("/sign-in");
 
   const result = await getSavedQuestion({
-    clerkId : userId!,  ///////////// modified ///////////////
+    clerkId : userId,
     searchQuery: searchparams.q,
+    filter: searchparams.filter,
     page: searchparams.page ? +searchparams.page : 1,
   });  
 
@@ -34,7 +38,7 @@ const Collection = async (prop: {searchParams : SearchParams} ) => {
 
       <div className="mt-11 flex justify-between gap-5 max-sm:flex-col sm:items-center">
         <LocalSearchbar
-          route="/"
+          route="/collection"
           iconPosition="left"
           imgSrc="/assets/icons/search.svg"
           placeholder="Search for questions..."
@@ -50,9 +54,10 @@ const Collection = async (prop: {searchParams : SearchParams} ) => {
       <div className="mt-10 flex w-full flex-col gap-6">
         {result.questions.length > 0 ?
         result.questions.map((question:any)=> (
-          <QuestionCard 
+          <QuestionCard
           key={question._id}
           _id={question._id}
+          clerkId={userId}
           title={question.title}
           tags={question.tags}
           author={question.author}

@@ -217,12 +217,15 @@ export async function downvoteAnswer(params: AnswerVoteParams): Promise<{ succes
       }
 
       /////////////// Increment author's reputation //////////////////
+      // Mirror the upvote logic with the opposite signs: a new downvote
+      // costs the voter 2 and the author 10; removing a downvote refunds
+      // both. (Previously both branches were inverted.)
       await User.findByIdAndUpdate(userId, {
-        $inc: { reputation: hasdownVoted ? -2: 2}
+        $inc: { reputation: hasdownVoted ? 2 : -2 }
       })
 
       await User.findByIdAndUpdate(answer.author, {
-        $inc: { reputation: hasdownVoted? -10: 10}
+        $inc: { reputation: hasdownVoted ? 10 : -10 }
       })
 
       revalidatePath(path);
