@@ -24,7 +24,11 @@ export type AiUsageStatus =
   | "rejected"
   | "flagged";
 
-export type AiTask = "answer-draft" | "tag-suggest";
+export type AiTask =
+  | "answer-draft"
+  | "tag-suggest"
+  | "embedding"
+  | "duplicate-detect";
 
 export type AiFeedback = "helpful" | "not_helpful";
 
@@ -54,7 +58,11 @@ const AiUsageLogSchema = new Schema<IAiUsageLog>({
   promptVersion: { type: Number, required: true },
   modelName: { type: String, required: true },
   provider: { type: String, enum: ["gemini"], default: "gemini" },
-  task: { type: String, enum: ["answer-draft", "tag-suggest"], required: true },
+  task: {
+    type: String,
+    enum: ["answer-draft", "tag-suggest", "embedding", "duplicate-detect"],
+    required: true,
+  },
   inputTokens: { type: Number, default: 0 },
   outputTokens: { type: Number, default: 0 },
   latencyMs: { type: Number, default: 0 },

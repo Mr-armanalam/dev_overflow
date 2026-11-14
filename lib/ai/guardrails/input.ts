@@ -25,6 +25,14 @@ export const AiTagSuggestInputSchema = z.object({
   body: z.string().min(1).max(AI_TAG_SUGGEST_MAX_BODY_CHARS),
 });
 
+/** Input for POST /api/ai/similar (RAG, P2): title is required, body
+ *  optional, excludeQuestionId skips the question being edited. */
+export const AiSimilarInputSchema = z.object({
+  title: z.string().min(1).max(AI_TAG_SUGGEST_MAX_TITLE_CHARS),
+  body: z.string().max(AI_TAG_SUGGEST_MAX_BODY_CHARS).optional(),
+  excludeQuestionId: z.string().min(1).optional(),
+});
+
 const PII_PATTERNS: Array<{ pattern: RegExp; replacement: string }> = [
   // Email addresses
   {

@@ -25,9 +25,10 @@ import {
   stripHtmlToText,
 } from "@/lib/ai/guardrails/input";
 import {
-  ANSWER_DRAFT_V1,
+  ANSWER_DRAFT_V2,
   buildAnswerDraftPrompt,
-} from "@/lib/ai/prompts/answer-draft.v1";
+} from "@/lib/ai/prompts/answer-draft.v2";
+import { retrieveSimilar } from "@/lib/ai/rag/retrieve";
 import { getLlmProvider, getModelForTask } from "@/lib/ai/router";
 import { checkDailyBudget } from "@/lib/ai/budgets";
 import { createUsageLog, updateUsageLog } from "@/lib/ai/observability";
@@ -75,8 +76,8 @@ export const POST = async (request: Request) => {
     try {
       await createUsageLog({
         userId,
-        promptId: ANSWER_DRAFT_V1.id,
-        promptVersion: ANSWER_DRAFT_V1.version,
+        promptId: ANSWER_DRAFT_V2.id,
+        promptVersion: ANSWER_DRAFT_V2.version,
         modelName: getModelForTask("answer-draft"),
         task: "answer-draft",
         status: "rejected",
@@ -110,6 +111,21 @@ export const POST = async (request: Request) => {
   // Flagged, never silently rewritten: the call proceeds and the log
   // row carries status "flagged".
   const flagged = detectPromptInjection(`${title}\n${content}`);
+
+  // RAG (P2): retrieve similar questions for citations. Retrieval is
+  // best-effort — an empty list means the v2 prompt tells the model to
+  // say "No similar questions found" instead of hallucinating sources.
+  const sources = await retrieveSimilar({
+    text: `${title}\n${content}`,
+    excludeQuestionId: String(question._id),
+  });
+  const context = sources.map((source, i) => ({
+    index: i + 1,
+    questionId: source.questionId,
+    title: source.title,
+    excerpt: source.snippet,
+  }));
+
   const model = getModelForTask("answer-draft");
   const startedAt = Date.now();
 
@@ -117,8 +133,8 @@ export const POST = async (request: Request) => {
   try {
     usageLog = await createUsageLog({
       userId,
-      promptId: ANSWER_DRAFT_V1.id,
-      promptVersion: ANSWER_DRAFT_V1.version,
+      promptId: ANSWER_DRAFT_V2.id,
+      promptVersion: ANSWER_DRAFT_V2.version,
       modelName: model,
       task: "answer-draft",
       status: flagged ? "flagged" : "pending",
@@ -136,8 +152,8 @@ export const POST = async (request: Request) => {
   let result;
   try {
     result = await provider.stream({
-      system: ANSWER_DRAFT_V1.system,
-      prompt: buildAnswerDraftPrompt({ title, content }),
+      system: ANSWER_DRAFT_V2.system,
+      prompt: buildAnswerDraftPrompt({ title, content, context }),
       model,
       maxTokens: 2048,
       onFinish: async (finish) => {
@@ -153,8 +169,8 @@ export const POST = async (request: Request) => {
             userId,
             questionId: parsed.data.questionId,
             content: finish.text,
-            promptId: ANSWER_DRAFT_V1.id,
-            promptVersion: ANSWER_DRAFT_V1.version,
+            promptId: ANSWER_DRAFT_V2.id,
+            promptVersion: ANSWER_DRAFT_V2.version,
             modelName: model,
             status: "generated",
           });
@@ -196,7 +212,22 @@ export const POST = async (request: Request) => {
     );
   }
 
+  // Sources travel in a header (URI-encoded JSON: titles may contain
+  // non-ASCII characters). The client renders them as a "Sources"
+  // list with links; the [n] markers in the draft text match `n`.
   return result.toTextStreamResponse({
-    headers: { "x-ai-usage-log-id": usageLogId },
+    headers: {
+      "x-ai-usage-log-id": usageLogId,
+      "x-ai-sources": encodeURIComponent(
+        JSON.stringify(
+          sources.map((source, i) => ({
+            n: i + 1,
+            questionId: source.questionId,
+            title: source.title,
+            score: Math.round(source.score * 1000) / 1000,
+          }))
+        )
+      ),
+    },
   });
 };

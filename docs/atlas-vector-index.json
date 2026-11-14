@@ -1,0 +1,20 @@
+{
+  "fields": [
+    {
+      "numDimensions": 768,
+      "path": "embedding",
+      "similarity": "cosine",
+      "type": "vector"
+    },
+    {
+      "path": "questionId",
+      "type": "filter"
+    },
+    {
+      "path": "tags",
+      "type": "filter"
+    }
+  ],
+  "name": "question_embeddings_vector_index",
+  "type": "vector"
+}

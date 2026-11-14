@@ -2,8 +2,9 @@
 /* eslint-disable spaced-comment */
 /* eslint-disable import/no-duplicates */
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Editor } from "@tinymce/tinymce-react";
+import Link from "next/link";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -38,6 +39,21 @@ const Question = ({type, questionDetails}: Props) => {
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [isSuggestingTags, setIsSuggestingTags] = useState(false);
   const [tagSuggestError, setTagSuggestError] = useState<string | null>(null);
+
+  // RAG similar questions (P2): live lookup as the title is typed.
+  // Nothing is auto-applied — the list is links to read, and the
+  // duplicate banner is only a suggestion, never an auto-close.
+  const [similarQuestions, setSimilarQuestions] = useState<
+    Array<{ questionId: string; title: string; score: number }>
+  >([]);
+  const [duplicateSuggest, setDuplicateSuggest] = useState<{
+    questionId: string;
+    title: string;
+    confidence: number;
+    reason: string;
+  } | null>(null);
+  const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
+  const similarSeq = useRef(0);
   const pathname = usePathname();
 
   const parsedQuestionDetails = questionDetails && JSON.parse(questionDetails || '');
@@ -51,6 +67,89 @@ const Question = ({type, questionDetails}: Props) => {
       tags: groupedTags || [],
     },
   });
+
+  // Live similar-questions lookup (P2): debounced 600 ms, only once
+  // the title is at least 10 characters. A sequence guard drops stale
+  // responses when keystrokes arrive faster than the API. In edit mode
+  // the question being edited is excluded from its own results.
+  const titleValue = form.watch("title");
+  useEffect(() => {
+    const title = (titleValue ?? "").trim();
+    if (title.length < 10) {
+      setSimilarQuestions([]);
+      setDuplicateSuggest(null);
+      setIsLoadingSimilar(false);
+      return;
+    }
+    const seq = ++similarSeq.current;
+    setIsLoadingSimilar(true);
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch("/api/ai/similar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            excludeQuestionId: parsedQuestionDetails?._id,
+          }),
+        });
+        if (seq !== similarSeq.current) return;
+        if (!response.ok) {
+          setSimilarQuestions([]);
+          setDuplicateSuggest(null);
+          return;
+        }
+        const data: unknown = await response.json().catch(() => null);
+        if (seq !== similarSeq.current) return;
+        const results = (data as { results?: unknown } | null)?.results;
+        setSimilarQuestions(
+          Array.isArray(results)
+            ? results.filter(
+                (
+                  item
+                ): item is {
+                  questionId: string;
+                  title: string;
+                  score: number;
+                } =>
+                  typeof item === "object" &&
+                  item !== null &&
+                  typeof (item as { questionId?: unknown }).questionId ===
+                    "string" &&
+                  typeof (item as { title?: unknown }).title === "string"
+              )
+            : []
+        );
+        const duplicate = (data as { duplicate?: unknown } | null)
+          ?.duplicate;
+        setDuplicateSuggest(
+          duplicate !== null &&
+            typeof duplicate === "object" &&
+            typeof (duplicate as { questionId?: unknown }).questionId ===
+              "string" &&
+            typeof (duplicate as { title?: unknown }).title === "string"
+            ? (duplicate as {
+                questionId: string;
+                title: string;
+                confidence: number;
+                reason: string;
+              })
+            : null
+        );
+      } catch (error) {
+        // Similar lookup is a nice-to-have: never block asking.
+        if (seq === similarSeq.current) {
+          console.log(error);
+          setSimilarQuestions([]);
+          setDuplicateSuggest(null);
+        }
+      } finally {
+        if (seq === similarSeq.current) setIsLoadingSimilar(false);
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [titleValue]);
 
   async function onSubmit(values: z.infer<typeof QuestionSchema>) {
     setIsSubmitting(true);
@@ -200,6 +299,53 @@ const Question = ({type, questionDetails}: Props) => {
             </FormItem>
           )}
         />
+        {(duplicateSuggest || similarQuestions.length > 0) && (
+          <div className="background-light900_dark300 light-border-2 rounded-md border p-4">
+            {duplicateSuggest && (
+              <div className="mb-3 rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3">
+                <p className="small-medium text-dark400_light800">
+                  This looks like a duplicate of{" "}
+                  <Link
+                    href={`/question/${duplicateSuggest.questionId}`}
+                    className="text-primary-500 hover:underline"
+                  >
+                    {duplicateSuggest.title}
+                  </Link>
+                </p>
+                <p className="body-regular mt-1 text-light-500">
+                  {duplicateSuggest.reason} Check it first — your question
+                  may already be answered there.
+                </p>
+              </div>
+            )}
+            {similarQuestions.length > 0 && (
+              <div>
+                <p className="small-medium text-dark400_light800">
+                  Similar questions
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {similarQuestions.map((similar) => (
+                    <li key={similar.questionId}>
+                      <Link
+                        href={`/question/${similar.questionId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="body-regular text-primary-500 hover:underline"
+                      >
+                        {similar.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+        {isLoadingSimilar && similarQuestions.length === 0 && (
+          <p className="body-regular text-light-500">
+            Looking for similar questions…
+          </p>
+        )}
         <FormField
           control={form.control}
           name="explanation"

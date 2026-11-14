@@ -11,6 +11,7 @@
  * logic — otherwise a call could be retried twice over.
  */
 import {
+  embedMany,
   generateObject,
   generateText,
   streamText,
@@ -49,6 +50,12 @@ export interface LlmStreamResult {
   finishReason: string;
 }
 
+export interface LlmEmbedResponse {
+  embeddings: number[][];
+  /** Input tokens consumed across the batch. */
+  inputTokens: number;
+}
+
 export interface LlmProvider {
   id: "gemini";
   generate(req: LlmGenerateRequest): Promise<LlmGenerateResponse>;
@@ -64,6 +71,13 @@ export interface LlmProvider {
     onFinish?: (result: LlmStreamResult) => void | Promise<void>;
     onError?: (error: unknown) => void | Promise<void>;
   }): Promise<ReturnType<typeof streamText>>;
+  /**
+   * Embed one or more texts with text-embedding-004 (768-d). Same
+   * retry/timeout discipline as the text calls. The SDK splits large
+   * batches itself; callers keep batches small anyway (a question +
+   * its top answers is ≤ 4 texts).
+   */
+  embedTexts(texts: string[]): Promise<LlmEmbedResponse>;
 }
 
 const GEMINI_SAFETY_SETTINGS = [
@@ -128,7 +142,7 @@ class GeminiProvider implements LlmProvider {
       throw new Error("GEMINI_API_KEY is not configured");
     }
     const google = createGoogleGenerativeAI({ apiKey });
-    // @ai-sdk/google v4: the provider call takes only the model id.
+    // @ai-sdk/google v2: the provider call takes only the model id.
     // Model options (e.g. safety settings) travel via `providerOptions`
     // on each generate/streamText call — see the three call sites below.
     return google(modelId);
@@ -196,6 +210,29 @@ class GeminiProvider implements LlmProvider {
       usage: toUsage(result.usage),
       model: req.model,
       latencyMs: Date.now() - startedAt,
+    };
+  }
+
+  async embedTexts(texts: string[]): Promise<LlmEmbedResponse> {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not configured");
+    }
+    const google = createGoogleGenerativeAI({ apiKey });
+    const embeddingModel = google.textEmbeddingModel(
+      "text-embedding-004"
+    );
+    const result = await withRetries(() =>
+      embedMany({
+        model: embeddingModel,
+        values: texts,
+        maxRetries: 0,
+        abortSignal: AbortSignal.timeout(AI_CALL_TIMEOUT_MS),
+      })
+    );
+    return {
+      embeddings: result.embeddings,
+      inputTokens: result.usage.tokens,
     };
   }
 
