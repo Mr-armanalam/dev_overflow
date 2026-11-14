@@ -42,8 +42,8 @@ const LeftSidebar = () => {
   const pathname = usePathname();
   return (
     <section
-      className="background-light900_dark200 light-border custom-scrollbar sticky left-0 top-0 flex h-screen flex-col
-     justify-between overflow-y-auto border-r p-6 pt-36 shadow-light-300 dark:shadow-none max-sm:hidden lg:w-[266px]"
+      className="sticky top-0 left-0 flex custom-scrollbar h-screen flex-col justify-between overflow-y-auto
+     border-r light-border background-light900_dark200 p-6 pt-36 shadow-light-300 max-sm:hidden lg:w-[266px] dark:shadow-none"
     >
       <div className="flex flex-1 flex-col gap-6">
         {links.map((item) => {
@@ -63,7 +63,7 @@ const LeftSidebar = () => {
               key={item.route}
               className={`${
                 isActive
-                  ? "primary-gradient rounded-lg text-light-900"
+                  ? "rounded-lg text-light-900 primary-gradient"
                   : "text-dark300_light900"
               } flex items-center justify-start gap-4 bg-transparent p-4
                 `}
@@ -86,7 +86,7 @@ const LeftSidebar = () => {
       <Show when="signed-out">
             <div className="flex flex-col gap-3">
                 <Link href={"/sign-in"}>
-                  <Button className="small-medium btn-secondary min-h-[41px] w-full rounded-lg px-4 py-3 shadow-none">
+                  <Button className="min-h-[41px] w-full rounded-lg btn-secondary px-4 py-3 small-medium shadow-none">
                     <Image 
                     src={"/assets/icons/account.svg"}
                     alt="login"
@@ -98,7 +98,7 @@ const LeftSidebar = () => {
                   </Button>
                 </Link>
                 <Link href={"/sign-up"}>
-                  <Button className="small-medium light-border-2 btn-tertiary text-dark400_light900 min-h-[41px] w-full rounded-lg px-4 py-3 shadow-none">
+                  <Button className="min-h-[41px] w-full rounded-lg light-border-2 btn-tertiary px-4 py-3 small-medium text-dark400_light900 shadow-none">
                   <Image 
                     src={"/assets/icons/sign-up.svg"}
                     alt="sign up"

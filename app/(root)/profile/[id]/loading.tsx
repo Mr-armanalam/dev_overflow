@@ -5,7 +5,7 @@ const Loading = () => {
   return (
     <section>
 
-        <div className='mb-12 mt-11 flex flex-wrap gap-5'>
+        <div className='mt-11 mb-12 flex flex-wrap gap-5'>
             <Skeleton className = 'h-14 flex-1' />
             <Skeleton className = 'h-14 w-28' />
         </div>

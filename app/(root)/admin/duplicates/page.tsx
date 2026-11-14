@@ -23,20 +23,20 @@ const AdminDuplicatesPage = async () => {
   return (
     <div>
       <h1 className="h1-bold text-dark100_light900">Duplicate review</h1>
-      <p className="body-regular mt-2 text-light-500">
+      <p className="mt-2 body-regular text-light-500">
         AI duplicate suggestions awaiting review. Confirming records your
         decision — it never closes a question automatically. Rejecting
         removes the suggestion from this queue.
       </p>
 
       {!result.success && (
-        <p className="body-regular mt-6 text-red-500">
+        <p className="mt-6 body-regular text-red-500">
           {result.error ?? "Could not load duplicate suggestions."}
         </p>
       )}
 
       {result.success && suggestions.length === 0 && (
-        <p className="body-regular mt-6 text-light-500">
+        <p className="mt-6 body-regular text-light-500">
           No duplicate suggestions awaiting review.
         </p>
       )}
@@ -46,17 +46,17 @@ const AdminDuplicatesPage = async () => {
           {suggestions.map((suggestion) => (
             <div
               key={suggestion.id}
-              className="background-light900_dark300 light-border rounded-md border p-4"
+              className="rounded-md border light-border background-light900_dark300 p-4"
             >
               <p className="paragraph-semibold text-dark100_light900">
                 {suggestion.draftTitle}
               </p>
               {suggestion.draftBody && (
-                <p className="body-regular mt-1 line-clamp-2 text-light-500">
+                <p className="mt-1 line-clamp-2 body-regular text-light-500">
                   {suggestion.draftBody}
                 </p>
               )}
-              <p className="body-regular mt-3 text-dark400_light800">
+              <p className="mt-3 body-regular text-dark400_light800">
                 Looks like a duplicate of{" "}
                 <Link
                   href={`/question/${suggestion.duplicateOfId}`}
@@ -68,10 +68,10 @@ const AdminDuplicatesPage = async () => {
                 </Link>{" "}
                 — confidence {Math.round(suggestion.confidence * 100)}%
               </p>
-              <p className="small-regular mt-1 text-light-500">
+              <p className="mt-1 small-regular text-light-500">
                 {suggestion.reason}
               </p>
-              <p className="small-regular mt-2 text-light-500">
+              <p className="mt-2 small-regular text-light-500">
                 Suggested by {suggestion.suggestedByUsername} on{" "}
                 {new Date(suggestion.createdAt).toLocaleString()}
                 {suggestion.questionId && (

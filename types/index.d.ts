@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { BADGE_CRITERIA } from "@/constants";
 export interface SidebarLink {
   imgURL: string;

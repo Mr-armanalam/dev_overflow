@@ -51,7 +51,7 @@ const DuplicateReviewActions = ({
     <div className="flex flex-wrap items-center gap-2">
       <Button
         type="button"
-        className="primary-gradient w-fit"
+        className="w-fit primary-gradient"
         onClick={() => review("confirmed")}
         disabled={isPending}
       >

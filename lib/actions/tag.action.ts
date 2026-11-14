@@ -1,4 +1,4 @@
-/* eslint-disable spaced-comment */
+ 
 "use server"
 
 import User from "@/database/user.model";

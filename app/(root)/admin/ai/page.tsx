@@ -71,57 +71,57 @@ const AdminAiPage = async () => {
   return (
     <div>
       <h1 className="h1-bold text-dark100_light900">AI Usage</h1>
-      <p className="body-regular mt-2 text-light-500">
+      <p className="mt-2 body-regular text-light-500">
         Today&apos;s AI calls (UTC day). Costs are approximate — see the
         price table in lib/ai/pricing.ts. Admin-only page (RBAC, P3).
       </p>
 
       <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-3">
-        <div className="background-light900_dark300 light-border rounded-md border p-4">
+        <div className="rounded-md border light-border background-light900_dark300 p-4">
           <p className="small-medium text-light-500">Calls today</p>
-          <p className="h2-bold text-dark100_light900 mt-1">{callsToday}</p>
+          <p className="mt-1 h2-bold text-dark100_light900">{callsToday}</p>
         </div>
-        <div className="background-light900_dark300 light-border rounded-md border p-4">
+        <div className="rounded-md border light-border background-light900_dark300 p-4">
           <p className="small-medium text-light-500">Cost today (approx.)</p>
-          <p className="h2-bold text-dark100_light900 mt-1">
+          <p className="mt-1 h2-bold text-dark100_light900">
             ${costToday.toFixed(4)}
           </p>
         </div>
-        <div className="background-light900_dark300 light-border rounded-md border p-4">
+        <div className="rounded-md border light-border background-light900_dark300 p-4">
           <p className="small-medium text-light-500">Latency p50 / p95</p>
-          <p className="h2-bold text-dark100_light900 mt-1">
+          <p className="mt-1 h2-bold text-dark100_light900">
             {p50Latency} / {p95Latency} ms
           </p>
         </div>
-        <div className="background-light900_dark300 light-border rounded-md border p-4">
+        <div className="rounded-md border light-border background-light900_dark300 p-4">
           <p className="small-medium text-light-500">Cache hit rate</p>
-          <p className="h2-bold text-dark100_light900 mt-1">
+          <p className="mt-1 h2-bold text-dark100_light900">
             {cacheHitRate.toFixed(1)}%
           </p>
           <p className="small-regular text-light-500">
             0% until Upstash env vars are set — see docs/upstash-setup.md.
           </p>
         </div>
-        <div className="background-light900_dark300 light-border rounded-md border p-4">
+        <div className="rounded-md border light-border background-light900_dark300 p-4">
           <p className="small-medium text-light-500">Error rate</p>
-          <p className="h2-bold text-dark100_light900 mt-1">
+          <p className="mt-1 h2-bold text-dark100_light900">
             {errorRate.toFixed(1)}%
           </p>
           <p className="small-regular text-light-500">
             {errorRows} failed of {callsToday} calls
           </p>
         </div>
-        <div className="background-light900_dark300 light-border rounded-md border p-4">
+        <div className="rounded-md border light-border background-light900_dark300 p-4">
           <p className="small-medium text-light-500">Error rate by provider</p>
           {byProvider.size === 0 ? (
-            <p className="body-regular text-dark100_light900 mt-1">
+            <p className="mt-1 body-regular text-dark100_light900">
               No calls yet
             </p>
           ) : (
             [...byProvider.entries()].map(([provider, stats]) => (
               <p
                 key={provider}
-                className="body-regular text-dark100_light900 mt-1"
+                className="mt-1 body-regular text-dark100_light900"
               >
                 {provider}:{" "}
                 {stats.calls > 0
@@ -134,16 +134,16 @@ const AdminAiPage = async () => {
         </div>
       </div>
 
-      <h2 className="h3-bold text-dark100_light900 mt-10">Recent calls</h2>
+      <h2 className="mt-10 h3-bold text-dark100_light900">Recent calls</h2>
       {recent.length === 0 ? (
-        <p className="body-regular mt-2 text-light-500">
+        <p className="mt-2 body-regular text-light-500">
           No AI calls today yet.
         </p>
       ) : (
-        <div className="background-light900_dark300 light-border mt-4 overflow-x-auto rounded-md border">
+        <div className="mt-4 overflow-x-auto rounded-md border light-border background-light900_dark300">
           <table className="w-full text-left">
             <thead>
-              <tr className="small-medium text-light-500 border-b">
+              <tr className="border-b small-medium text-light-500">
                 <th className="px-4 py-2">Time</th>
                 <th className="px-4 py-2">Task</th>
                 <th className="px-4 py-2">Model</th>
@@ -159,7 +159,7 @@ const AdminAiPage = async () => {
               {recent.map((log) => (
                 <tr
                   key={String(log._id)}
-                  className="body-regular text-dark100_light900 border-b last:border-0"
+                  className="border-b body-regular text-dark100_light900 last:border-0"
                 >
                   <td className="px-4 py-2">
                     {log.createdAt.toLocaleTimeString()}

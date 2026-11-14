@@ -81,8 +81,8 @@ const Profile = ({ clerkId, user }: Props) => {
               </FormLabel>
               <FormControl>
                 <Input
-                  className="no-focus paragraph-regular light-border-2 background-light700_dark300
-                text-dark300_light700 min-h-[56px] border"
+                  className="min-h-14 border light-border-2 background-light700_dark300
+                paragraph-regular text-dark300_light700 no-focus"
                   placeholder="Your Name"
                   {...field}
                 />
@@ -101,8 +101,8 @@ const Profile = ({ clerkId, user }: Props) => {
               </FormLabel>
               <FormControl>
                 <Input
-                  className="no-focus paragraph-regular light-border-2 background-light700_dark300
-                text-dark300_light700 min-h-[56px] border"
+                  className="min-h-14 border light-border-2 background-light700_dark300
+                paragraph-regular text-dark300_light700 no-focus"
                   placeholder="Your username"
                   {...field}
                 />
@@ -120,8 +120,8 @@ const Profile = ({ clerkId, user }: Props) => {
               <FormControl>
                 <Input
                   type="url"
-                  className="no-focus paragraph-regular light-border-2 background-light700_dark300
-                text-dark300_light700 min-h-[56px] border"
+                  className="min-h-14 border light-border-2 background-light700_dark300
+                paragraph-regular text-dark300_light700 no-focus"
                   placeholder="Your portfolio URL"
                   {...field}
                 />
@@ -138,8 +138,8 @@ const Profile = ({ clerkId, user }: Props) => {
               <FormLabel>Location </FormLabel>
               <FormControl>
                 <Input
-                  className="no-focus paragraph-regular light-border-2 background-light700_dark300
-                text-dark300_light700 min-h-[56px] border"
+                  className="min-h-14 border light-border-2 background-light700_dark300
+                paragraph-regular text-dark300_light700 no-focus"
                   placeholder="Where are you from"
                   {...field}
                 />
@@ -156,8 +156,8 @@ const Profile = ({ clerkId, user }: Props) => {
               <FormLabel>Bio </FormLabel>
               <FormControl>
                 <Textarea
-                  className="no-focus paragraph-regular light-border-2 background-light700_dark300
-                text-dark300_light700 min-h-[56px] border"
+                  className="min-h-14 border light-border-2 background-light700_dark300
+                paragraph-regular text-dark300_light700 no-focus"
                   placeholder="What's special about you"
                   {...field}
                 />
@@ -170,7 +170,7 @@ const Profile = ({ clerkId, user }: Props) => {
         <div className="mt-7 flex justify-end">
           <Button
             type="submit"
-            className="primary-gradient w-fit"
+            className="w-fit primary-gradient"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Saving..." : "Save"}

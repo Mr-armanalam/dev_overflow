@@ -49,16 +49,33 @@ export default defineConfig([
   react.configs.flat["jsx-runtime"],
 
   // Tailwind class-order / arbitrary-value rules.
-  tailwindcss.configs["flat/recommended"],
+  // NOTE (Tailwind v4): eslint-plugin-tailwindcss v4 dropped the
+  // `flat/recommended` preset (only `recommended` remains), and that
+  // preset switches on extra rules this repo never had
+  // (no-contradicting-classname as error, canonical/shorthand,
+  // important-modifier-suffix, no-unnecessary-arbitrary-value).
+  // Register the plugin only; the two rules below are the ones the
+  // repo has always enforced.
+  { plugins: { tailwindcss } },
 
   // Repo rules carried over from the old `.eslintrc.json`.
   {
     settings: {
       react: { version: "detect" },
+      // eslint-plugin-tailwindcss v4 reads the Tailwind v4 CSS-first
+      // config; it cannot find it on its own (it defaults to
+      // ./src/style.css, which does not exist here).
+      tailwindcss: {
+        cssConfigPath: "./app/globals.css",
+      },
     },
     rules: {
       "tailwindcss/classnames-order": "warn",
       "tailwindcss/enforces-negative-arbitrary-values": "error",
+      // Same three rules the v3 `flat/recommended` preset enabled.
+      "tailwindcss/enforces-shorthand": "warn",
+      "tailwindcss/no-custom-classname": "warn",
+      "tailwindcss/no-unnecessary-arbitrary-value": "warn",
     },
   },
 

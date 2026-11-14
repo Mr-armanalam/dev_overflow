@@ -74,7 +74,7 @@ const Page = async (props: { params: Params, searchParams: SearchParams}) => {
             </div>
 
             {userInfo.user.bio && (
-                <p className="paragraph-regular text-dark400_light800 mt-8">
+                <p className="mt-8 paragraph-regular text-dark400_light800">
                     {userInfo.user.bio}
                 </p>
             )}
@@ -86,8 +86,8 @@ const Page = async (props: { params: Params, searchParams: SearchParams}) => {
             {clerkId === userInfo.user.clerkId && (
               <Link href={"/profile/edit"}>
                 <Button
-                  className="paragraph-medium btn-secondary text-dark300_light900
-                            min-h-[46ps] min-w-[175px] px-4 py-3"
+                  className="min-h-[46ps] min-w-[175px] btn-secondary
+                            px-4 py-3 paragraph-medium text-dark300_light900"
                 >
                   Edit Profile
                 </Button>
@@ -106,7 +106,7 @@ const Page = async (props: { params: Params, searchParams: SearchParams}) => {
 
       <div className="mt-10 flex gap-10">
         <Tabs defaultValue="top-posts" className="flex-1">
-          <TabsList className="background-light800_dark400 min-h-[42px] p-1">
+          <TabsList className="min-h-[42px] background-light800_dark400 p-1">
             <TabsTrigger value="top-posts" className="tab">Top Posts</TabsTrigger>
             <TabsTrigger value="answers" className="tab">Answers</TabsTrigger>
           </TabsList>

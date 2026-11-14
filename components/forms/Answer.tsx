@@ -1,5 +1,5 @@
-/* eslint-disable spaced-comment */
-/* eslint-disable no-useless-return */
+ 
+ 
 "use client";
 import React, { useEffect, useState } from "react";
 import {
@@ -305,7 +305,7 @@ const Answer = ({ questionId }: Props) => {
         </h4>
 
         <button
-          className="btn light-border-2 flex items-center gap-1.5 rounded-md px-4 py-2.5 
+          className="flex items-center gap-1.5 rounded-md light-border-2 btn px-4 py-2.5 
         text-primary-500 shadow-none dark:text-primary-500"
           onClick={generateAIAnswer}
           disabled={isSubmittingAI}
@@ -328,7 +328,7 @@ const Answer = ({ questionId }: Props) => {
       </div>
 
       {showAiPanel && (
-        <div className="background-light900_dark300 light-border-2 mt-6 rounded-md border p-4">
+        <div className="mt-6 rounded-md border light-border-2 background-light900_dark300 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="small-medium text-dark400_light800">
               AI draft — review before posting
@@ -346,7 +346,7 @@ const Answer = ({ questionId }: Props) => {
           </div>
 
           {aiCacheNote && (
-            <p className="small-regular mt-3 text-light-500">
+            <p className="mt-3 small-regular text-light-500">
               {aiCacheNote}
               {aiCacheSimilar && (
                 <>
@@ -364,7 +364,7 @@ const Answer = ({ questionId }: Props) => {
             </p>
           )}
           {isSubmittingAI && !aiDraftMarkdown && (
-            <p className="body-regular mt-3 text-light-500">
+            <p className="mt-3 body-regular text-light-500">
               Generating draft…
             </p>
           )}
@@ -393,7 +393,7 @@ const Answer = ({ questionId }: Props) => {
             </div>
           )}
           {aiError && (
-            <p className="body-regular mt-3 text-red-500">{aiError}</p>
+            <p className="mt-3 body-regular text-red-500">{aiError}</p>
           )}
           {aiError && aiDegradedSimilar.length > 0 && (
             <div className="mt-4">
@@ -420,7 +420,7 @@ const Answer = ({ questionId }: Props) => {
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Button
               type="button"
-              className="primary-gradient w-fit"
+              className="w-fit primary-gradient"
               onClick={insertAiDraftIntoEditor}
               disabled={!aiDraftReady || aiDraftInserted}
             >
@@ -474,7 +474,7 @@ const Answer = ({ questionId }: Props) => {
           </div>
 
           {aiDraftInserted && (
-            <p className="small-regular mt-2 text-light-500">
+            <p className="mt-2 small-regular text-light-500">
               Draft inserted — edit it in the editor, then submit. This
               answer will be marked AI-assisted and earns no reputation.
             </p>
@@ -540,7 +540,7 @@ const Answer = ({ questionId }: Props) => {
           <div className="mt-4 flex justify-end text-white">
             <Button
               type="submit"
-              className="primary-gradient w-fit"
+              className="w-fit primary-gradient"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Submitting..." : "Submit"}
