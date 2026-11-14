@@ -249,12 +249,16 @@ export async function downvoteQuestion(params: QuestionVoteParams): Promise<{ su
     }
 
     /////////////// Increment author's reputation //////////////////
+    // Mirror the upvote logic with the opposite signs: a new downvote
+    // costs the voter 2 and the author 10; removing a downvote refunds
+    // both. (Previously this keyed the voter branch off hasupVoted and
+    // gave the author +10 for a fresh downvote.)
     await User.findByIdAndUpdate(userId, {
-      $inc: { reputation: hasupVoted ? -2: 2}
+      $inc: { reputation: hasdownVoted ? 2 : -2 }
     })
 
     await User.findByIdAndUpdate(question.author, {
-      $inc: { reputation: hasdownVoted? -10: 10}
+      $inc: { reputation: hasdownVoted ? 10 : -10 }
     })
 
     revalidatePath(path);
@@ -286,7 +290,9 @@ export async function deleteQuestion(params: DeleteQuestionParams) {
     await Question.deleteOne({ _id: questionId });
     await Answer.deleteMany({ question: questionId });
     await Interaction.deleteMany({ question: questionId });
-    await Tag.updateMany({ question: questionId },{ $pull: { questions: questionId } });
+    // Tag has no `question` field — its array is `questions`, so the
+    // old filter matched nothing and tag references were orphaned.
+    await Tag.updateMany({ questions: questionId },{ $pull: { questions: questionId } });
 
     revalidatePath(path);
   } catch (error) {
@@ -370,7 +376,7 @@ export async function getRecommentedQuestions(params: RecommendedParams){
   try {
     await connectToDatabase();
 
-    const { userId, page = 1, pageSize = 28 , searchQuery } = params;
+    const { userId, page = 1, pageSize = 20 , searchQuery } = params;
 
     const user = await User.findOne({ clerkId: userId});
 
@@ -395,19 +401,26 @@ export async function getRecommentedQuestions(params: RecommendedParams){
       ...new Set(userTags.map((tag: any) => tag._id)),
     ];
 
-    const query: FilterQuery<typeof Question> = {
-      $and: [
-        { tags: {$in: distinctUserTagIds}},  /////////// Question with user tags ///////////////
-        { author: {$ne: user._id}}, ///////////// Exclude user's own questions ///////////////
-      ]
-    };
+    // The search clause must live INSIDE the $and: as a sibling $or it
+    // could return questions outside the user's tags. $title is not a
+    // field — the title field is `title`.
+    const andClauses: FilterQuery<typeof Question>[] = [
+      { tags: {$in: distinctUserTagIds}},  /////////// Question with user tags ///////////////
+      { author: {$ne: user._id}}, ///////////// Exclude user's own questions ///////////////
+    ];
 
     if(searchQuery) {
-      query.$or = [
-        { $title: { $regex: searchQuery, $options: "i"} },
-        { content: { $regex: searchQuery, $options: "i"}}
-      ];
+      andClauses.push({
+        $or: [
+          { title: { $regex: searchQuery, $options: "i"} },
+          { content: { $regex: searchQuery, $options: "i"}}
+        ]
+      });
     }
+
+    const query: FilterQuery<typeof Question> = {
+      $and: andClauses
+    };
 
     const totalQustions = await Question.countDocuments(query);
     
@@ -423,7 +436,7 @@ export async function getRecommentedQuestions(params: RecommendedParams){
     .skip(skipAmount)
     .limit(pageSize);
 
-    const isNext = totalQustions > recommendedQuestions.length;
+    const isNext = totalQustions > skipAmount + recommendedQuestions.length;
 
     return { questions: recommendedQuestions, isNext}
 
