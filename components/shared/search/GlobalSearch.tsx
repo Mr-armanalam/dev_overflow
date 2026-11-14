@@ -40,6 +40,11 @@ const GlobalSearch = () => {
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
+      // Guard: Next has no same-URL bailout — pushing the URL we are
+      // already on re-renders the page and re-fires this effect (the
+      // fresh useSearchParams() object is a dependency), so only
+      // navigate when the target actually differs.
+      const currentUrl = window.location.pathname + window.location.search;
       if (search) {
         const newUrl = formUrlQuery({
           params: searchParams.toString(),
@@ -47,14 +52,14 @@ const GlobalSearch = () => {
           value: search,
         });
 
-        router.push(newUrl, { scroll: false });
+        if (newUrl !== currentUrl) router.push(newUrl, { scroll: false });
       } else {
         if (query) {
           const newUrl = removeKeysFromQuery({
             params: searchParams.toString(),
             keysToRemove: ["global", 'type'],
           });
-          router.push(newUrl, { scroll: false });
+          if (newUrl !== currentUrl) router.push(newUrl, { scroll: false });
         }
       }
     }, 300);
