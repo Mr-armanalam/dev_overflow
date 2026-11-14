@@ -209,10 +209,11 @@ const Question = ({type, questionDetails}: Props) => {
     e: React.KeyboardEvent<HTMLInputElement>,
     field: any
   ) => {
-    if (e.key === "Enter" && field?.name === "tags") {
+    if ((e.key === "Enter" || e.key === ",") && field?.name === "tags") {
       e.preventDefault();
       const tagInput = e.target as HTMLInputElement;
-      const tagValue = tagInput.value.trim();
+      // A trailing comma is the separator, not part of the tag.
+      const tagValue = tagInput.value.trim().replace(/,+$/, "");
 
       if (tagValue !== "") {
         if (tagValue.length > 15) {
@@ -400,7 +401,7 @@ const Question = ({type, questionDetails}: Props) => {
               
               <FormDescription className="body-regular mt-2.5 text-light-500">
                 Introduce the problem and expand on what you put in the title.
-                Minimum 20 characters
+                Minimum 100 characters
               </FormDescription>
               <FormMessage className="text-red-900" />
             </FormItem>
@@ -490,7 +491,7 @@ const Question = ({type, questionDetails}: Props) => {
               </FormControl>
               <FormDescription className="body-regular mt-2.5 text-light-500">
                 Add up to 3 tags to describe what your question is about. You
-                need to press enter to add a tag.
+                need to press Enter or comma to add a tag.
               </FormDescription>
               <FormMessage className="text-red-900" />
             </FormItem>

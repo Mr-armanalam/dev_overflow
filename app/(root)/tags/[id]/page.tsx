@@ -3,6 +3,7 @@ import NoResult from '@/components/shared/NoResult'
 import Pagination from '@/components/shared/Pagination'
 import LocalSearchbar from '@/components/shared/search/LocalSearchbar'
 import { getQuesionsByTagId } from '@/lib/actions/tag.action'
+import { auth } from '@clerk/nextjs/server'
 // import { URLProps } from '@/types'
 import React from 'react'
 
@@ -13,6 +14,7 @@ type SearchParams = Promise<{ [key: string]: string | undefined }>
 const Page = async (props: { params: Params, searchParams: SearchParams }) => {
   const searchparams = await props.searchParams;
   const paraams = await props.params
+  const { userId } = await auth();
 
     const result = await getQuesionsByTagId({
         tagId: paraams.id,
@@ -37,9 +39,10 @@ const Page = async (props: { params: Params, searchParams: SearchParams }) => {
       <div className="mt-10 flex w-full flex-col gap-6">
         {result.questions.length > 0 ?
         result.questions.map((question:QcProps)=> (
-          <QuestionCard 
+          <QuestionCard
           key={question._id}
           _id={question._id}
+          clerkId={userId}
           title={question.title}
           tags={question.tags}
           author={question.author}
