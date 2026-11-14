@@ -5,6 +5,7 @@ import User from "@/database/user.model";
 import { connectToDatabase } from "../mongoose";
 import { GetAllTagsParams, GetQuestionsByTagIdParams, GetTopInteractedTagsParams } from "./shared.types";
 import Tag, { ITag } from "@/database/tag.model";
+import Interaction from "@/database/interaction.model";
 import { FilterQuery } from "mongoose";
 import Question from "@/database/question.model";
 
@@ -12,21 +13,43 @@ export async function getTopInteractedTags(params: GetTopInteractedTagsParams) {
     try {
         await connectToDatabase();
 
-        // const { userId, limit = 3 } = params;
-        const { userId } = params;
+        const { userId, limit = 3 } = params;
 
         const user = await User.findById(userId);
 
         if(!user) throw new Error("User not found");
 
-        // Find interactions for the user and group by tags
-        // Interation....
+        // Real aggregation over the user's Interaction records: unwind
+        // their tags, count interactions per tag, return the most
+        // interacted ones with real Tag names. Returns [] when the
+        // user has no interactions — never fake data.
+        const topTags = await Interaction.aggregate([
+            { $match: { user: user._id } },
+            { $unwind: "$tags" },
+            { $group: { _id: "$tags", count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: limit },
+            {
+                $lookup: {
+                    from: "tags",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "tag",
+                },
+            },
+            { $unwind: "$tag" },
+            {
+                $project: {
+                    _id: { $toString: "$tag._id" },
+                    name: "$tag.name",
+                },
+            },
+        ]);
 
-        return [{ _id: '1', name: 'tag1'}, { _id: '2', name: 'tag2'}]
-
+        return topTags as { _id: string; name: string }[];
     } catch (error) {
         console.log(error);
-        throw error 
+        throw error
     }
 }
 
@@ -109,7 +132,9 @@ export async function getQuesionsByTagId(params: GetQuestionsByTagIdParams) {
         }
 
         const isNext = tag.questions.length > pageSize;
-        const questions = tag.questions;
+        // The populate fetched pageSize + 1 rows to probe for a next
+        // page; only return pageSize of them.
+        const questions = tag.questions.slice(0, pageSize);
 
         return { tagTitle: tag.name, questions ,isNext};
 

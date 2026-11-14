@@ -13,11 +13,12 @@ const GlobalResult = () => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const [result, setResult] = useState([
-    { type: "question", id: 1, title: "Next.js question" },
-    { type: "tag", id: 1, title: "Next.js " },
-    { type: "user", id: 1, title: "question" },
-  ]);
+  // Start empty — the previous hardcoded placeholder rows
+  // ("Next.js question", "Next.js ") were fake results shown before
+  // the real fetch resolved.
+  const [result, setResult] = useState<
+    { type: string; id: string; title: string }[]
+  >([]);
 
   const global = searchParams.get("global");
   const type = searchParams.get("type");
@@ -47,6 +48,21 @@ const GlobalResult = () => {
       fetchResult();
     }
   }, [global, type]);
+
+  const renderIcon = (type: string) => {
+    switch (type) {
+      case "question":
+        return "/assets/icons/question.svg";
+      case "answer":
+        return "/assets/icons/message.svg";
+      case "user":
+        return "/assets/icons/user.svg";
+      case "tag":
+        return "/assets/icons/tag.svg";
+      default:
+        return "/assets/icons/search.svg";
+    }
+  };
 
   const renderLink = (type: string, id: string) => {
     switch (type) {
@@ -83,15 +99,15 @@ const GlobalResult = () => {
         ) : (
           <div className="flex flex-col gap-2">
             {result.length > 0 ? (
-              result.map((item: any, index: number) => (
+              result.map((item, index: number) => (
                 <Link
                   href={renderLink(item.type, item.id)}
                   key={item.type + item.id + index}
                   className="flex w-full cursor-pointer items-start gap-3 px-5 py-2.5 hover:bg-light-700/50 dark:bg-dark-500/50"
                 >
                   <Image
-                    src={"/assets/icons/tag.svg"}
-                    alt="tags"
+                    src={renderIcon(item.type)}
+                    alt={item.type}
                     width={18}
                     height={18}
                     className="invert-colors mt-1 object-contain"

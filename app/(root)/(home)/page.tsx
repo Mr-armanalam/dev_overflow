@@ -86,9 +86,10 @@ const Home = async (prop: {searchParams : SearchParams} ) => {
       <div className="mt-10 flex w-full flex-col gap-6">
         {result.questions.length > 0 ?
         result.questions.map((question)=> (
-          <QuestionCard 
+          <QuestionCard
           key={question._id}
           _id={question._id}
+          clerkId={userId}
           title={question.title}
           tags={question.tags}
           author={question.author}
