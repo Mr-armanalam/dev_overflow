@@ -272,10 +272,24 @@ const Answer = ({ questionId }: Props) => {
   const insertAiDraftIntoEditor = async () => {
     const html =
       aiDraftHtml || (await renderAiMarkdown(aiDraftMarkdown));
-    if (editorRef.current) {
+    const editor = editorRef.current;
+    if (editor) {
       // renderAiMarkdown already sanitises with DOMPurify.
-      editorRef.current.setContent(html);
+      editor.setContent(html);
     }
+    // The editor ref is populated from init.setup, so a null ref
+    // means the editor isn't ready yet. Verify the content actually
+    // landed before claiming success: the old code flipped the
+    // button to "Inserted into editor" unconditionally, so if the
+    // editor was still loading when Insert was clicked, the draft
+    // never appeared while the UI claimed it had.
+    const inserted =
+      editor !== null && editor.getContent().trim().length > 0;
+    if (!inserted) {
+      setAiError("The editor isn't ready yet — please try inserting again.");
+      return;
+    }
+    setAiError(null);
     // TinyMCE's programmatic setContent does not reliably fire the
     // change handler, so set the form value explicitly too.
     form.setValue("answer", html);
@@ -495,12 +509,16 @@ const Answer = ({ questionId }: Props) => {
                 <FormControl className="mt-3.5">
                   <Editor
                     apiKey={process.env.NEXT_PUBLIC_tINY_EDITOR_API_KEY}
-                    onInit={(_evt, editor) => {
-                      editorRef.current = editor;
-                    }}
                     onBlur={field.onBlur}
                     onEditorChange={(content) => field.onChange(content)}
                     init={{
+                      // Capture the editor instance here, via the
+                      // direct TinyMCE hook: init.setup is forwarded
+                      // by the wrapper in both tinymce-react v5 and
+                      // v6, so this works on either version.
+                      setup: (editor: TinyMCEEditor) => {
+                        editorRef.current = editor;
+                      },
                       height: 350,
                       menubar: false,
                       plugins: [
