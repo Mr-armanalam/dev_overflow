@@ -252,14 +252,23 @@ const Answer = ({ questionId }: Props) => {
       }
 
       const decoder = new TextDecoder();
+      // Track the streamed text locally as well as in state: if the
+      // model returns nothing, the draft is empty — not "ready".
+      let draftText = "";
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
-        setAiDraftMarkdown((prev) =>
-          prev + decoder.decode(value, { stream: true })
-        );
+        const chunk = decoder.decode(value, { stream: true });
+        draftText += chunk;
+        setAiDraftMarkdown((prev) => prev + chunk);
       }
-      setAiDraftMarkdown((prev) => prev + decoder.decode());
+      const tail = decoder.decode();
+      draftText += tail;
+      setAiDraftMarkdown((prev) => prev + tail);
+      if (draftText.trim().length === 0) {
+        setAiError("The AI returned an empty draft. Please try regenerating.");
+        return;
+      }
       setAiDraftReady(true);
     } catch (error) {
       console.log(error);
@@ -272,6 +281,12 @@ const Answer = ({ questionId }: Props) => {
   const insertAiDraftIntoEditor = async () => {
     const html =
       aiDraftHtml || (await renderAiMarkdown(aiDraftMarkdown));
+    // An empty draft is a different failure from an unready editor:
+    // do not blame the editor when there is nothing to insert.
+    if (!html.trim()) {
+      setAiError("The draft is empty — please regenerate the draft.");
+      return;
+    }
     const editor = editorRef.current;
     if (editor) {
       // renderAiMarkdown already sanitises with DOMPurify.
@@ -436,7 +451,9 @@ const Answer = ({ questionId }: Props) => {
               type="button"
               className="w-fit primary-gradient"
               onClick={insertAiDraftIntoEditor}
-              disabled={!aiDraftReady || aiDraftInserted}
+              disabled={
+                !aiDraftReady || aiDraftInserted || !aiDraftMarkdown.trim()
+              }
             >
               {aiDraftInserted
                 ? "Inserted into editor"
