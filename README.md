@@ -36,7 +36,7 @@ Dev Overflow is a developer Q&A platform: ask questions, write answers, vote on 
 | Auth | Clerk 7.9.26 (authentication, webhooks) |
 | Validation | Zod 4.6.7 |
 | Editor | TinyMCE 8.10.2 (`@tinymce/tinymce-react` 6.3.1) |
-| AI | Vercel AI SDK 5.0.289, `@google/genai` 2.32.0; Gemini 3.8 Flash, gemini-embedding-2 |
+| AI | Vercel AI SDK 7.0.173, `@ai-sdk/google` 4.0.121, `@google/genai` 3.3.0; Gemini 3.8 Flash, gemini-embedding-2 |
 | MCP | `@modelcontextprotocol/sdk` 1.32.2 |
 | Cache / rate limit | Upstash Redis 1.41.0, `@upstash/ratelimit` 2.2.1 |
 | Testing | Vitest 4 |

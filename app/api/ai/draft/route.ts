@@ -5,7 +5,8 @@
  * directly, never trusts client-supplied question text (title/content
  * are loaded from the database by questionId).
  *
- * The response is a plain text stream (AI SDK `toTextStreamResponse`).
+ * The response is a plain text stream (AI SDK `toTextStream` +
+ * `createTextStreamResponse`).
  * The usage-log row id travels in the `x-ai-usage-log-id` header so
  * the client can attach feedback thumbs to the call.
  *
@@ -29,6 +30,7 @@
  * here — the user reviews, edits and submits from the answer form.
  */
 import { NextResponse } from "next/server";
+import { createTextStreamResponse, toTextStream } from "ai";
 import type { Types } from "mongoose";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
@@ -434,7 +436,9 @@ export const POST = async (request: Request) => {
   // Sources travel in a header (URI-encoded JSON: titles may contain
   // non-ASCII characters). The client renders them as a "Sources"
   // list with links; the [n] markers in the draft text match `n`.
-  return result.toTextStreamResponse({
+  const textStream = toTextStream({ stream: result.stream });
+  return createTextStreamResponse({
+    stream: textStream,
     headers: {
       "x-ai-usage-log-id": usageLogId,
       "x-ai-sources": encodeURIComponent(
