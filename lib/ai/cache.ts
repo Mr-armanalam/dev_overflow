@@ -102,6 +102,17 @@ export async function setExactCache(
   }
 }
 
+/** Delete one exact-cache entry (poisoned drafts). Never throws. */
+export async function deleteExactCache(key: string): Promise<void> {
+  const redis = getRedisClient();
+  if (!redis) return;
+  try {
+    await redis.del(key);
+  } catch (error) {
+    console.error("AI exact-cache delete failed, continuing", error);
+  }
+}
+
 /** One RAG source, as served to the client (matches Answer.tsx). */
 export interface CachedSource {
   n: number;
@@ -138,4 +149,11 @@ export async function setCachedDraftByQuestion(
     draft,
     AI_CACHE_TTLS_SECONDS["answer-draft"]
   );
+}
+
+/** Delete the semantic-cache entry for a question (poisoned drafts). */
+export async function deleteCachedDraftByQuestion(
+  questionId: string
+): Promise<void> {
+  await deleteExactCache(draftCacheKeyByQuestion(questionId));
 }

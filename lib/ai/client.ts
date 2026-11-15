@@ -44,6 +44,9 @@ export interface LlmGenerateResponse {
   usage: LlmUsage;
   model: string;
   latencyMs: number;
+  /** AI SDK finish reason ("stop", "length", "content-filter", ...).
+   * Needed to tell a safety block from any other empty response. */
+  finishReason: string;
 }
 
 export interface LlmStreamResult {
@@ -190,6 +193,7 @@ class GeminiProvider implements LlmProvider {
       usage: toUsage(result.usage),
       model: req.model,
       latencyMs: Date.now() - startedAt,
+      finishReason: result.finishReason,
     };
   }
 

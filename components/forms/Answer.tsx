@@ -23,6 +23,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import ParseHTML from "../shared/ParseHTML";
 import { renderAiMarkdown } from "@/lib/ai/markdown";
+import { emptyDraftMessage } from "@/lib/ai/empty-draft";
 import {
   applyValidationResult,
   groundednessLabel,
@@ -51,6 +52,33 @@ interface AiSource {
 // NOTE: the form no longer takes the question text as a prop — the
 // /api/ai/draft route loads the question from the database by id, so
 // the client can never smuggle different content into the prompt.
+
+/**
+ * After an empty draft, ask the usage-status endpoint why: the draft
+ * route records the AI SDK finish reason in the usage log (a safety
+ * block lands as EMPTY_RESPONSE_CONTENT-FILTER). Best effort with a
+ * short timeout — any failure falls back to the generic message.
+ */
+async function fetchEmptyDraftMessage(
+  usageLogId: string | null
+): Promise<string> {
+  if (!usageLogId) return emptyDraftMessage(null);
+  try {
+    const res = await fetch(
+      `/api/ai/usage/${encodeURIComponent(usageLogId)}`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (!res.ok) return emptyDraftMessage(null);
+    const data: unknown = await res.json().catch(() => null);
+    const errorCode = (data as { errorCode?: unknown } | null)?.errorCode;
+    return emptyDraftMessage(
+      typeof errorCode === "string" ? errorCode : null
+    );
+  } catch {
+    return emptyDraftMessage(null);
+  }
+}
+
 const Answer = ({ questionId }: Props) => {
   const pathname = usePathname();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -380,7 +408,7 @@ const Answer = ({ questionId }: Props) => {
       draftText += tail;
       setAiDraftMarkdown((prev) => prev + tail);
       if (draftText.trim().length === 0) {
-        setAiError("The AI returned an empty draft. Please try regenerating.");
+        setAiError(await fetchEmptyDraftMessage(usageLogId));
         return;
       }
       // Self-validation (v3): check the draft against the community

@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "backfill:embeddings": "tsx scripts/backfill-embeddings.ts",
     "eval:ai": "tsx scripts/eval-ai.ts",
+    "check:ai-model": "tsx scripts/check-ai-model.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
