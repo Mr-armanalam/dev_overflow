@@ -47,6 +47,8 @@ import {
 import { scrubOutput } from "@/lib/ai/guardrails/output";
 import {
   AI_CACHE_TTLS_SECONDS as CACHE_TTLS,
+  deleteCachedDraftByQuestion,
+  deleteExactCache,
   exactCacheKey,
   getCachedDraftByQuestion,
   getExactCache,
@@ -54,6 +56,10 @@ import {
   setExactCache,
   type CachedDraft,
 } from "@/lib/ai/cache";
+import {
+  emptyDraftErrorCode,
+  isUsableCachedDraft,
+} from "@/lib/ai/empty-draft";
 import { enforceAiBurstLimit } from "@/lib/ai/ratelimit";
 import { getDegradedSimilarQuestions } from "@/lib/ai/degraded";
 import {
@@ -163,8 +169,18 @@ export const POST = async (request: Request) => {
     `${parsed.data.questionId}\n${title}\n${content}`
   );
   const exactHit = await getExactCache<CachedDraft>(cacheKey);
-  if (exactHit) {
-    return serveCachedDraft({ userId, cached: exactHit, kind: "exact" });
+  if (exactHit && !isUsableCachedDraft(exactHit)) {
+    // Poisoned entry: an empty draft cached before empty drafts
+    // stopped being stored (PR #35). Delete it and fall through to
+    // generation instead of serving nothing.
+    await deleteExactCache(cacheKey);
+  } else if (exactHit) {
+    const served = await serveCachedDraft({
+      userId,
+      cached: exactHit,
+      kind: "exact",
+    });
+    if (served) return served;
   }
 
   // Kill switch (P1): with no cache hit, serve similar questions +
@@ -217,8 +233,13 @@ export const POST = async (request: Request) => {
   );
   if (closest && closest.cosine >= AI_SEMANTIC_CACHE_MIN_COSINE) {
     const semanticHit = await getCachedDraftByQuestion(closest.questionId);
-    if (semanticHit) {
-      return serveCachedDraft({
+    if (semanticHit && !isUsableCachedDraft(semanticHit)) {
+      // Same poison as the exact cache — and the semantic cache is
+      // version-blind (keyed by question id only), so a v2-era empty
+      // draft can still be served under v3. Delete and fall through.
+      await deleteCachedDraftByQuestion(closest.questionId);
+    } else if (semanticHit) {
+      const served = await serveCachedDraft({
         userId,
         cached: semanticHit,
         kind: "semantic",
@@ -227,6 +248,7 @@ export const POST = async (request: Request) => {
           title: closest.title,
         },
       });
+      if (served) return served;
     }
   }
 
@@ -304,12 +326,21 @@ export const POST = async (request: Request) => {
           // poison the exact + semantic caches and repeat instantly
           // on the next identical question.
           if (draftText.trim().length === 0) {
+            const finishReason = finish.finishReason;
             await updateUsageLog(usageLogId, {
               inputTokens: finish.usage.inputTokens,
               outputTokens: finish.usage.outputTokens,
               latencyMs: Date.now() - startedAt,
               status: "error",
-              errorCode: "EMPTY_RESPONSE",
+              errorCode: emptyDraftErrorCode(finishReason),
+            });
+            // The terminal is where an empty draft gets diagnosed:
+            // the client only sees "empty draft", the reason lives
+            // here (e.g. "content-filter" = safety block).
+            console.warn("AI draft came back empty", {
+              questionId: String(question._id),
+              finishReason,
+              outputTokens: finish.usage.outputTokens,
             });
             return;
           }
@@ -432,7 +463,13 @@ async function serveCachedDraft(params: {
   cached: CachedDraft;
   kind: "exact" | "semantic";
   similarQuestion?: { id: string; title: string };
-}): Promise<Response> {
+}): Promise<Response | null> {
+  // Defensive: never serve an empty cached draft, even if a caller
+  // forgot the check — the callers treat null as a cache miss and
+  // delete the poisoned entry.
+  if (!isUsableCachedDraft(params.cached)) {
+    return null;
+  }
   const startedAt = Date.now();
   let usageLogId: string | undefined;
   try {
