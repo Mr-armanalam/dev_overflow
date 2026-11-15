@@ -246,8 +246,8 @@ export async function validateDraft(
           title,
           content,
         });
-      } catch (error) {
-        console.error("Failed to persist AI validation", error);
+      } catch {
+        // Deliberately silent — this failure is swallowed by design.
       }
     }
     return result;

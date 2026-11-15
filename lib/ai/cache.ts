@@ -82,8 +82,7 @@ export async function getExactCache<T>(key: string): Promise<T | null> {
       return JSON.parse(raw) as T;
     }
     return raw as T;
-  } catch (error) {
-    console.error("AI exact-cache read failed, treating as miss", error);
+  } catch {
     return null;
   }
 }
@@ -97,8 +96,8 @@ export async function setExactCache(
   if (!redis) return;
   try {
     await redis.set(key, JSON.stringify(value), { ex: ttlSeconds });
-  } catch (error) {
-    console.error("AI exact-cache write failed, continuing", error);
+  } catch {
+    // Deliberately silent — this failure is swallowed by design.
   }
 }
 
@@ -108,8 +107,8 @@ export async function deleteExactCache(key: string): Promise<void> {
   if (!redis) return;
   try {
     await redis.del(key);
-  } catch (error) {
-    console.error("AI exact-cache delete failed, continuing", error);
+  } catch {
+    // Deliberately silent — this failure is swallowed by design.
   }
 }
 

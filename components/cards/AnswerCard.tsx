@@ -1,5 +1,4 @@
 import Link from "next/link";
-import React from "react";
 import Metric from "../Metric";
 import { formatNumber, getTimestamp } from "@/lib/utils";
 import { Show } from "@clerk/nextjs";

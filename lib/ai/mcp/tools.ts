@@ -88,8 +88,8 @@ function withMcpLogging<TArgs>(
         status: "pending",
       });
       logId = String(log._id);
-    } catch (error) {
-      console.error("Failed to log MCP call (non-fatal)", error);
+    } catch {
+      // Deliberately silent — this failure is swallowed by design.
     }
     const result = await fn(ctx, args);
     if (logId) {
@@ -99,8 +99,8 @@ function withMcpLogging<TArgs>(
           status: result.isError ? "error" : "success",
           errorCode: result.isError ? "TOOL_ERROR" : undefined,
         });
-      } catch (error) {
-        console.error("Failed to update MCP usage log (non-fatal)", error);
+      } catch {
+        // Deliberately silent — this failure is swallowed by design.
       }
     }
     return result;

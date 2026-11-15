@@ -209,8 +209,8 @@ export const POST = async (request: Request) => {
           cacheHit: true,
           latencyMs: Date.now() - startedAt,
         });
-      } catch (error) {
-        console.error("Failed to log cached duplicate-detect call", error);
+      } catch {
+        // Deliberately silent — this failure is swallowed by design.
       }
       await applyDuplicateVerdict(cachedVerdict);
       return NextResponse.json({ results, duplicate });
@@ -226,8 +226,8 @@ export const POST = async (request: Request) => {
         task: "duplicate-detect",
         status: "pending",
       });
-    } catch (error) {
-      console.error("Failed to create duplicate-detect usage log", error);
+    } catch {
+      // Deliberately silent — this failure is swallowed by design.
     }
     try {
       const provider = getLlmProvider();
@@ -284,8 +284,8 @@ export const POST = async (request: Request) => {
                 ? error.message.slice(0, 200)
                 : "PROVIDER_ERROR",
           });
-        } catch (logError) {
-          console.error("Failed to log duplicate-detect error", logError);
+        } catch {
+          // Deliberately silent — this failure is swallowed by design.
         }
       }
     }

@@ -63,7 +63,6 @@ export async function getQuestions(params: GetQuestionsParams) {
 
     return { questions, isNext };
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -114,7 +113,6 @@ export async function createQuestion(params: CreateQuestionParams) {
     // AI duplicate suggestion to the submitted question (P3 queue).
     return { questionId: String(question._id) };
   } catch (error) {
-    console.error(error);
     throw error;
   }
 }
@@ -135,7 +133,6 @@ export async function getQuestionsById(params: GetQuestionByIdParams) {
 
     return question;
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -191,7 +188,6 @@ export async function upvoteQuestion(params: QuestionVoteParams): Promise<{ succ
     revalidatePath(path);
     return { success: true };
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -247,7 +243,6 @@ export async function downvoteQuestion(params: QuestionVoteParams): Promise<{ su
     revalidatePath(path);
     return { success: true };
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -280,7 +275,6 @@ export async function deleteQuestion(params: DeleteQuestionParams) {
 
     revalidatePath(path);
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -310,7 +304,6 @@ export async function deleteAnswer(params: DeleteAnswerParams) {
 
     revalidatePath(path);
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -341,7 +334,6 @@ export async function editQuestion(params: EditQuestionParams) {
     revalidatePath(path);
    
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -357,7 +349,6 @@ export async function getHotQuestions() {
         return hotQuestions;
 
     } catch (error) {
-        console.log(error);
         throw error 
     }
 }
@@ -424,7 +415,6 @@ export async function getRecommentedQuestions(params: RecommendedParams){
     return { questions: recommendedQuestions, isNext}
 
   } catch (error) {
-    console.log("Error getting recommended questions:",error);
     throw error
   }
 }

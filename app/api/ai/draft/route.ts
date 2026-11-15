@@ -132,8 +132,8 @@ export const POST = async (request: Request) => {
         status: "rejected",
         errorCode: "ACCOUNT_TOO_NEW",
       });
-    } catch (error) {
-      console.error("Failed to log rejected AI draft call", error);
+    } catch {
+      // Deliberately silent — this failure is swallowed by design.
     }
     return NextResponse.json(
       {
@@ -268,8 +268,8 @@ export const POST = async (request: Request) => {
         status: "rejected",
         errorCode: "BUDGET_EXCEEDED",
       });
-    } catch (error) {
-      console.error("Failed to log rejected AI draft call", error);
+    } catch {
+      // Deliberately silent — this failure is swallowed by design.
     }
     // Degraded mode: the retrieved similar questions are served with
     // the 429 instead of a bare error.
@@ -386,9 +386,8 @@ export const POST = async (request: Request) => {
             String(question._id),
             cached
           );
-        } catch (error) {
+        } catch {
           // Logging must never break the response the user already got.
-          console.error("Failed to log finished AI draft", error);
         }
       },
       onError: async (error) => {
@@ -401,8 +400,8 @@ export const POST = async (request: Request) => {
                 ? error.message.slice(0, 200)
                 : "STREAM_ERROR",
           });
-        } catch (logError) {
-          console.error("Failed to log failed AI draft", logError);
+        } catch {
+          // Deliberately silent — this failure is swallowed by design.
         }
       },
     });
@@ -416,8 +415,8 @@ export const POST = async (request: Request) => {
         status: "error",
         errorCode: "PROVIDER_ERROR",
       });
-    } catch (error) {
-      console.error("Failed to log failed AI draft", error);
+    } catch {
+      // Deliberately silent — this failure is swallowed by design.
     }
     return NextResponse.json(
       {
@@ -488,9 +487,8 @@ async function serveCachedDraft(params: {
       latencyMs: Date.now() - startedAt,
     });
     usageLogId = String(log._id);
-  } catch (error) {
+  } catch {
     // A logging failure must never take a cache hit away.
-    console.error("Failed to log cached AI draft", error);
   }
 
   const headers: Record<string, string> = {

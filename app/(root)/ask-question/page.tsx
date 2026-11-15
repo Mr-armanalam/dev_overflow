@@ -1,7 +1,6 @@
 import Question from '@/components/components/Question'
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import React from 'react'
 
 
 const Page = async () => {

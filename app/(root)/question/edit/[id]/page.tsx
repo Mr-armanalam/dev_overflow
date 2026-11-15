@@ -2,7 +2,6 @@ import Question from '@/components/components/Question'
 import { getQuestionsById } from '@/lib/actions/question.action';
 import { auth } from '@clerk/nextjs/server'
 import { notFound, redirect } from 'next/navigation'
-import React from 'react'
 
 type Params = Promise<{ id: string }>
 

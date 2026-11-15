@@ -187,8 +187,8 @@ const Answer = ({ questionId }: Props) => {
       if (editorRef.current) {
         editorRef.current.setContent("");
       }
-    } catch (error) {
-      console.log(error);
+    } catch {
+      // Deliberately silent — this failure is swallowed by design.
     } finally {
       setIsSubmitting(false);
     }
@@ -420,8 +420,7 @@ const Answer = ({ questionId }: Props) => {
         await runAiValidation(draftText, usageLogId);
       }
       setAiDraftReady(true);
-    } catch (error) {
-      console.log(error);
+    } catch {
       setAiError("AI draft failed. Please try again.");
     } finally {
       setIsSubmittingAI(false);

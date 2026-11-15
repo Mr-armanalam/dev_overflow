@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ReloadIcon } from "@radix-ui/react-icons";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -34,7 +34,6 @@ const GlobalResult = () => {
 
         setResult(JSON.parse(res));
       } catch (error) {
-        console.log(error);
         throw error;
       } finally {
         setIsLoading(false);

@@ -224,10 +224,7 @@ async function attachTopAnswers(
           upvotes: answer.upvotes.length,
         }));
     }
-  } catch (error) {
-    console.error(
-      "RAG retrieval: could not load answers, continuing without them",
-      error
-    );
+  } catch {
+    // Deliberately silent — this failure is swallowed by design.
   }
 }

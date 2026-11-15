@@ -34,8 +34,7 @@ export async function recordAiFeedback(params: {
     log.feedback = feedback;
     await log.save();
     return { success: true };
-  } catch (error) {
-    console.log(error);
+  } catch {
     return { success: false, error: "Could not save feedback" };
   }
 }

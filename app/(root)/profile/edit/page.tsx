@@ -2,7 +2,6 @@ import Profile from '@/components/forms/Profile';
 import ApiKeysManager from '@/components/shared/ApiKeysManager';
 import { getUserById } from '@/lib/actions/user.action';
 import { auth } from '@clerk/nextjs/server'
-import React from 'react'
 
 const Page = async () => {
 

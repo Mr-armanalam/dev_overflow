@@ -61,7 +61,6 @@ export async function createAnswer(params: CreateAnswerParams) {
     // never throws, failures are logged to AiUsageLog.
     void indexAnswer(newAnswer._id, author as Types.ObjectId);
   } catch (error) {    
-    console.log(error);
     throw error;
   }
 }
@@ -105,7 +104,6 @@ export async function getAnswers(params: GetAnswersParams) {
       
     return { answers ,isNext};
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -165,7 +163,6 @@ export async function upvoteAnswer(params: AnswerVoteParams): Promise<{ success:
       return { success: true };
 
   } catch (error) {
-      console.log(error);
       throw error 
   }
 }
@@ -228,7 +225,6 @@ export async function downvoteAnswer(params: AnswerVoteParams): Promise<{ succes
       return { success: true };
 
   } catch (error) {
-      console.log(error);
       throw error 
   }
 }

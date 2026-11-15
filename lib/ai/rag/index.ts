@@ -50,9 +50,8 @@ async function logIndexFailure(
           : "unknown error"
       }`,
     });
-  } catch (logError) {
+  } catch {
     // Logging must never break indexing callers either.
-    console.error("Failed to log embedding index failure", logError);
   }
 }
 
@@ -149,10 +148,6 @@ export async function indexQuestion(
     );
     return { ok: true, chunks: chunks.length };
   } catch (error) {
-    console.error(
-      `Failed to index question ${String(questionId)} for RAG`,
-      error
-    );
     await logIndexFailure(userId, String(questionId), error);
     return {
       ok: false,
@@ -179,10 +174,6 @@ export async function indexAnswer(
     }
     return indexQuestion(answer.question, userId ?? answer.author);
   } catch (error) {
-    console.error(
-      `Failed to index answer ${String(answerId)} for RAG`,
-      error
-    );
     return {
       ok: false,
       chunks: 0,

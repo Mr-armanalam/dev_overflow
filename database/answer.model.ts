@@ -4,9 +4,8 @@ export interface IAnswer extends Document {
   author: Schema.Types.ObjectId;
   question: Schema.Types.ObjectId;
   content: string;
-  /** True when the submitted content came from an AI draft. Arman's
-   *  decision (13 Nov 2026): AI-assisted answers get a badge and NO
-   *  +10 reputation. */
+  /** True when the submitted content came from an AI draft.
+   *  AI-assisted answers get a badge and no +10 reputation. */
   aiAssisted: boolean;
   upvotes: Schema.Types.ObjectId[];
   downvotes: Schema.Types.ObjectId[];

@@ -21,7 +21,6 @@ export async function getTopInteractedTags(params: GetTopInteractedTagsParams) {
         return [{ _id: '1', name: 'tag1'}, { _id: '2', name: 'tag2'}]
 
     } catch (error) {
-        console.log(error);
         throw error 
     }
 }
@@ -70,7 +69,6 @@ export async function getAllTags(params: GetAllTagsParams) {
         return {tags, isNext}
 
     } catch (error) {
-        console.log(error);
         throw error 
     }
 }
@@ -110,7 +108,6 @@ export async function getQuesionsByTagId(params: GetQuestionsByTagIdParams) {
         return { tagTitle: tag.name, questions ,isNext};
 
     } catch (error) {
-        console.log(error);
         throw error;
     }
 }
@@ -127,7 +124,6 @@ export async function getTopPopularTags() {
         return PopularTags;
 
     } catch (error) {
-        console.log(error);
         throw error 
     }
 }
