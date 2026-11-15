@@ -5,20 +5,45 @@ import User from "@/database/user.model";
 import { connectToDatabase } from "../mongoose";
 import { GetAllTagsParams, GetQuestionsByTagIdParams, GetTopInteractedTagsParams } from "./shared.types";
 import Tag, { ITag } from "@/database/tag.model";
-import { QueryFilter } from "mongoose";
+import { QueryFilter, type Types } from "mongoose";
 import Question from "@/database/question.model";
+import Interaction from "@/database/interaction.model";
+import { escapeRegExp } from "@/lib/utils";
 
 export async function getTopInteractedTags(params: GetTopInteractedTagsParams) {
     try {
         await connectToDatabase();
 
-        const { userId } = params;
+        // Default 3: the user card shows a short row of tags (the old
+        // stub returned 2). Callers may pass `limit` to ask for more.
+        const { userId, limit = 3 } = params;
 
         const user = await User.findById(userId);
 
         if(!user) throw new Error("User not found");
 
-        return [{ _id: '1', name: 'tag1'}, { _id: '2', name: 'tag2'}]
+        // Most-interacted tags first: count the user's interactions per
+        // tag. (Previously this returned a hardcoded [{tag1}, {tag2}].)
+        const topTagCounts = (await Interaction.aggregate([
+            { $match: { user: user._id } },
+            { $unwind: "$tags" },
+            { $group: { _id: "$tags", count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: limit },
+        ])) as Array<{ _id: Types.ObjectId; count: number }>;
+
+        if (topTagCounts.length === 0) return [];
+
+        const tags = await Tag.find({
+            _id: { $in: topTagCounts.map((entry) => entry._id) },
+        }).select("_id name");
+
+        // Return in interaction order, not database order.
+        const byId = new Map(tags.map((tag) => [String(tag._id), tag]));
+        return topTagCounts
+            .map((entry) => byId.get(String(entry._id)))
+            .filter((tag): tag is ITag => tag !== undefined)
+            .map((tag) => ({ _id: String(tag._id), name: tag.name }));
 
     } catch (error) {
         throw error 
@@ -35,7 +60,7 @@ export async function getAllTags(params: GetAllTagsParams) {
         const query: QueryFilter<typeof Tag> = {};
 
         if(searchQuery) {
-            query.$or = [{name: { $regex: new RegExp(searchQuery, 'i') }}]
+            query.$or = [{name: { $regex: new RegExp(escapeRegExp(searchQuery), 'i') }}]
         }
 
         let sortOptions = {};
@@ -86,7 +111,7 @@ export async function getQuesionsByTagId(params: GetQuestionsByTagIdParams) {
         const tag = await Tag.findOne(tagFilter).populate({
             path: 'questions',
             model: Question,
-            match: searchQuery ? {title: { $regex: searchQuery, $options: 'i' } } : {},
+            match: searchQuery ? {title: { $regex: escapeRegExp(searchQuery), $options: 'i' } } : {},
             options: {
                 sort: {createdAt: -1},
                 skip: skipAmount,
