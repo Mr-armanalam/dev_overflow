@@ -526,7 +526,7 @@ const Answer = ({ questionId }: Props) => {
                   height={12}
                   className="object-contain"
                 />
-                Gemini 3.8 Flash
+                Gemini 3.5 Flash-Lite
               </span>
             </span>
           </div>
