@@ -24,8 +24,6 @@ export async function getQuestions(params: GetQuestionsParams) {
 
     const { searchQuery, filter, page = 1, pageSize = 20 } = params;
 
-    /////////////////// Calculate the number of posts to skip based on the page number and page size /////////////////
-
     const skipAmount = (page - 1) * pageSize;
 
     const query : QueryFilter<typeof Question> = {};
@@ -81,25 +79,6 @@ export async function createQuestion(params: CreateQuestionParams) {
 
     const tagDocuments = [];
 
-    //////////////////////////////////// Extra but usefull ////////////////////////////////////////////////////////////
-
-    // Create the tags or get their ObjectId if they already exist
-    // for (const tag of tags) {
-
-    //   const existingTag = await Tag.findOneAndUpdate(
-    //     { name: { $regex: new RegExp(`^${tag}$`, "i") } }, // finding parameter by regular expression with case insensitive
-    //     { $setOnInsert: { name: tag }, $push: { questions: new mongoose.Types.ObjectId() } }, // on it
-    //     { upsert: true, new: true, setDefaultsOnInsert: true } // additional provide information (to create a new tag if no match found)
-    //   );
-
-    //   tagDocuments.push(existingTag._id);
-
-    // }
-
-    // const question = await Question.create({ title, content, tags: tagDocuments, author });
-
-    /////////////////////////////////// End ////////////////////////////////////////////////////////////////////////
-
     const question = await Question.create({ title, content, author });
 
     for (const tag of tags) {
@@ -116,14 +95,12 @@ export async function createQuestion(params: CreateQuestionParams) {
       $push: { tags: { $each: tagDocuments } },
     });
 
-    ////////////// Create an interaction record for the user's ask_question action ///////////////////
     await Interaction.create({
       user: author,
       action: "ask_question",
       question: question._id,
       tags: tagDocuments
     });
-    ////////////// Increment author's reputation by +5 for creating a question ///////////////////
     await User.findByIdAndUpdate(author, { $inc: { reputation: 5 } });
 
     revalidatePath(path);
@@ -207,10 +184,8 @@ export async function upvoteQuestion(params: QuestionVoteParams): Promise<{ succ
       throw new Error("Question not found");
     }
 
-    /////////////// Increment author's reputation by +1/-1 for upvoting/revoking an upvote to the question //////////////////
     await User.findByIdAndUpdate(userId, { $inc: { reputation: hasupVoted ? -1 : 1 } },)
 
-    ////////////// Increment author's reputation by +10/-10 for recieving an upvote to the question //////////////////
     await User.findByIdAndUpdate(question.author, { $inc: { reputation: hasupVoted ? -10 : 10 } })
 
     revalidatePath(path);
@@ -261,7 +236,6 @@ export async function downvoteQuestion(params: QuestionVoteParams): Promise<{ su
       throw new Error("Question not found");
     }
 
-    /////////////// Increment author's reputation //////////////////
     await User.findByIdAndUpdate(userId, {
       $inc: { reputation: hasupVoted ? -2: 2}
     })
@@ -327,7 +301,7 @@ export async function deleteAnswer(params: DeleteAnswerParams) {
     if (!isSameId(answer.author, mongoUser._id)) {
       throw new Error("Forbidden: only the author can delete this answer");
     }
-    await Answer.deleteOne({_id: answerId}); //////////////////////////////////////////////////////////////////
+    await Answer.deleteOne({_id: answerId});
     await Question.updateMany({ _id: answer.question },{ $pull: { answers: answerId } });
     await Interaction.deleteMany({ answer: answerId });
 

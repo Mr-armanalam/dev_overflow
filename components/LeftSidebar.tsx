@@ -11,7 +11,6 @@ import { useCan } from "@/lib/auth/use-permissions";
 
 const LeftSidebar = () => {
   const {userId} = useAuth();
-  // console.log(userId);
 
   // Admin UI gating only — the pages themselves enforce the role
   // server-side (lib/auth/server-permissions.ts); hiding a link here

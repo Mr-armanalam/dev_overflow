@@ -19,7 +19,6 @@ interface Props {
 const UserCard = async ({ user }: Props) => {
   const interactedTags = await getTopInteractedTags({ userId: user._id });
   return (
-    // <Link href={`/profile/${user.clerkId}`} className='shadow-light100_darknone w-full max-xs:min-w-full xs:w-[260px]'>
     <section className="w-full shadow-light100_darknone max-xs:min-w-full xs:w-65">
       <article className="flex w-full flex-col items-center justify-center rounded-2xl border light-border background-light900_dark200 p-8 ">
         <Link href={`/profile/${user.clerkId}`}>
@@ -53,7 +52,7 @@ const UserCard = async ({ user }: Props) => {
           )}
         </div>
       </article>
-    </section> ///////// link tag ///////////
+    </section>
   );
 };
 

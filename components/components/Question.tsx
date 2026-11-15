@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
  
- 
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { Editor } from "@tinymce/tinymce-react";
@@ -22,7 +21,6 @@ import { linkDuplicateSuggestionToQuestion } from "@/lib/actions/duplicate-sugge
 import { usePathname} from "next/navigation";
 import { useRouter } from 'next/navigation'
 import { useTheme } from "@/context/ThemeProvider";
-
 
 interface Props {
   type?: string;
@@ -191,7 +189,6 @@ const Question = ({type, questionDetails}: Props) => {
             questionId: created.questionId,
           }).catch((error) => console.log(error));
         }
-        ///////////// navigate to home page ////////////////  
 
         router.push('/');
       }

@@ -22,7 +22,6 @@ export async function createAnswer(params: CreateAnswerParams) {
     const author = mongoUser._id;
 
     const { content, question, path, aiAssisted = false } = params;
-    // const newAnswer = new Answer({ content, author, question });
 
     const newAnswer = await Answer.create({
       content,
@@ -31,7 +30,6 @@ export async function createAnswer(params: CreateAnswerParams) {
       aiAssisted,
     });
 
-    // Add the answer to the question's answer array
     const questionObject = await Question.findByIdAndUpdate(question, {
       $push: { answers: newAnswer._id },
     });
@@ -95,7 +93,7 @@ export async function getAnswers(params: GetAnswersParams) {
         break;
     }
 
-    const answers = await Answer.find({question: questionId })   /////////////// edited /////////////////
+    const answers = await Answer.find({question: questionId })
       .populate({path: "author", model: User , select: "_id clerkId name picture"})
       .sort(sortOptions)
       .skip(skipAmount)
@@ -155,7 +153,6 @@ export async function upvoteAnswer(params: AnswerVoteParams): Promise<{ success:
         throw new Error('Answer not found');
       }
 
-      /////////////// Increment author's reputation //////////////////
       await User.findByIdAndUpdate(userId, {
         $inc: { reputation: hasupVoted ? -2: 2}
       })
@@ -216,7 +213,6 @@ export async function downvoteAnswer(params: AnswerVoteParams): Promise<{ succes
         throw new Error('Answer not found');
       }
 
-      /////////////// Increment author's reputation //////////////////
       // Mirror the upvote logic with the opposite signs: a new downvote
       // costs the voter 2 and the author 10; removing a downvote refunds
       // both. (Previously both branches were inverted.)

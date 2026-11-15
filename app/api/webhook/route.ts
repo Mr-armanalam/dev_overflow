@@ -32,16 +32,13 @@ export async function POST(req: Request) {
     });
   }
 
-  // Get the body
   const payload = await req.json();
   const body = JSON.stringify(payload);
 
-  // Create a new Svix instance with your secret.
   const wh = new Webhook(WEBHOOK_SECRET);
 
   let evt: WebhookEvent;
 
-  // Verify the payload with the headers
   try {
     evt = wh.verify(body, {
       "svix-id": svix_id,
@@ -55,14 +52,10 @@ export async function POST(req: Request) {
     });
   }
 
-//   const { id } = evt.data;
   const eventType = evt.type;
-  // console.log(eventType);
   if(eventType === 'user.created'){
     const {id, email_addresses, image_url, username, first_name, last_name, public_metadata} = evt.data;
 
-    // Create a new user in your database
-    // const mongoUser =
     await createUser({
         clerkId: id,
         name: `${first_name}${last_name ? `${last_name}` : ''}`,
@@ -80,8 +73,6 @@ export async function POST(req: Request) {
   else if(eventType === 'user.updated'){
     const {id, email_addresses, image_url, username, first_name, last_name, public_metadata} = evt.data;
 
-    // Create a new user in your database
-    // const mongoUser = 
     await updateUser({
         clerkId: id,
         updateData: {

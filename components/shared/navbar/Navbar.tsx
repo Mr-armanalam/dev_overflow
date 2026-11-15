@@ -1,6 +1,5 @@
 import {
   Show,
-  //  Show, SignInButton,
   UserButton,
 } from "@clerk/nextjs";
 import Image from "next/image";
@@ -36,9 +35,6 @@ const Navbar = () => {
       </Suspense>
       <div className="flex-between gap-5 ">
         <Theme />
-        {/* <Show when="signed-out">
-          <SignInButton fallbackRedirectUrl={"/"} />
-        </Show> */}
         <Show when="signed-in">
           <UserButton
             appearance={{

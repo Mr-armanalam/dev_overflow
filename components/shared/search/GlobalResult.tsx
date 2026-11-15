@@ -23,15 +23,12 @@ const GlobalResult = () => {
   const global = searchParams.get("global");
   const type = searchParams.get("type");
 
- 
-
   useEffect(() => {
     const fetchResult = async () => {
       setResult([]);
       setIsLoading(true);
 
       try {
-        //           //////////// Everything Everywhere all at once ///////////////
 
         const res = await globalSearch({ query: global, type });
 

@@ -4,13 +4,11 @@ import Pagination from "@/components/shared/Pagination";
 import LocalSearchbar from "@/components/shared/search/LocalSearchbar";
 import { TagFilters } from "@/constants/filters";
 import { getAllTags } from "@/lib/actions/tag.action";
-// import { SearchParamsProps } from "@/types";
 import Link from "next/link";
 import React from "react";
 
 type SearchParams = Promise<{ [key: string]: string | undefined }>
 
-// const Page = async ({ searchParams }: SearchParamsProps) => {
 const Page = async (prop:{ searchParams : SearchParams}) => {
   const searchparams = await prop.searchParams;
   const result = await getAllTags({

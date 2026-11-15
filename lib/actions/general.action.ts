@@ -10,7 +10,6 @@ import Tag from "@/database/tag.model";
 
 const SearchableTypes = ["question", "answer", "user","tag"]
 
-
 export async function globalSearch(params: SearchParams) {
     try {
        await connectToDatabase();
@@ -30,7 +29,6 @@ export async function globalSearch(params: SearchParams) {
        const typeLower = type?.toLowerCase();
 
        if(!typeLower || !SearchableTypes.includes(typeLower)) {
-        //          ///////////////// search across everything /////////////////
         for( const { model, searchField, type } of modelsAndTypes) {
             const queryResult = await model.find({
                 [searchField]: regexQuery
@@ -46,7 +44,6 @@ export async function globalSearch(params: SearchParams) {
         }
 
        }else {
-        //        //////////////  search in the specified model type  //////////////
         const modelInfo = modelsAndTypes.find((item) => item.type === type)  
 
         if(!modelInfo) {

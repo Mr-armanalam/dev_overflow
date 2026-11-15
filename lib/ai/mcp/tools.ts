@@ -107,10 +107,6 @@ function withMcpLogging<TArgs>(
   };
 }
 
-// ---------------------------------------------------------------------------
-// search_questions — RAG retrieval + globalSearch fallback
-// ---------------------------------------------------------------------------
-
 export const SearchQuestionsSchema = {
   query: z.string().min(1).max(500).describe("Search text"),
   tags: z
@@ -217,10 +213,6 @@ export const searchQuestions = withMcpLogging(
   searchQuestionsImpl
 );
 
-// ---------------------------------------------------------------------------
-// get_question — question + optional answers
-// ---------------------------------------------------------------------------
-
 export const GetQuestionSchema = {
   id: z.string().min(1).describe("Question id (Mongo ObjectId)"),
   includeAnswers: z
@@ -305,10 +297,6 @@ async function getQuestionImpl(
 
 export const getQuestion = withMcpLogging("get_question", getQuestionImpl);
 
-// ---------------------------------------------------------------------------
-// list_tags — most popular tags
-// ---------------------------------------------------------------------------
-
 export const ListTagsSchema = {
   limit: z
     .number()
@@ -351,10 +339,6 @@ async function listTagsImpl(
 
 export const listTags = withMcpLogging("list_tags", listTagsImpl);
 
-// ---------------------------------------------------------------------------
-// get_user_stats — public fields only, never email
-// ---------------------------------------------------------------------------
-
 export const GetUserStatsSchema = {
   clerkId: z.string().min(1).describe("Clerk id of the user"),
 };
@@ -396,10 +380,6 @@ async function getUserStatsImpl(
 }
 
 export const getUserStats = withMcpLogging("get_user_stats", getUserStatsImpl);
-
-// ---------------------------------------------------------------------------
-// create_answer_draft — draft only, NEVER publishes
-// ---------------------------------------------------------------------------
 
 export const CreateAnswerDraftSchema = {
   questionId: z.string().min(1).describe("Question id (Mongo ObjectId)"),
