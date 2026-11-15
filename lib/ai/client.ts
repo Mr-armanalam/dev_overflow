@@ -20,7 +20,7 @@ import {
   type TextStreamPart,
   type ToolSet,
 } from "ai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createGoogle } from "@ai-sdk/google";
 import type { z } from "zod";
 import { AI_CALL_TIMEOUT_MS, AI_MAX_RETRIES } from "./limits";
 
@@ -157,8 +157,8 @@ class GeminiProvider implements LlmProvider {
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY is not configured");
     }
-    const google = createGoogleGenerativeAI({ apiKey });
-    // @ai-sdk/google v2: the provider call takes only the model id.
+    const google = createGoogle({ apiKey });
+    // @ai-sdk/google v4: the provider call takes only the model id.
     // Model options (e.g. safety settings) travel via `providerOptions`
     // on each generate/streamText call — see the three call sites below.
     return google(modelId);
@@ -177,7 +177,7 @@ class GeminiProvider implements LlmProvider {
     const result = await withRetries(() =>
       generateText({
         model,
-        system: req.system,
+        instructions: req.system,
         prompt: req.prompt,
         temperature: req.temperature,
         maxOutputTokens: req.maxTokens,
@@ -210,7 +210,7 @@ class GeminiProvider implements LlmProvider {
     const result = await withRetries(() =>
       generateObject({
         model,
-        system: req.system,
+        instructions: req.system,
         prompt: req.prompt,
         schema: zodSchema(req.schema),
         temperature: req.temperature,
@@ -235,8 +235,8 @@ class GeminiProvider implements LlmProvider {
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY is not configured");
     }
-    const google = createGoogleGenerativeAI({ apiKey });
-    const embeddingModel = google.textEmbeddingModel(
+    const google = createGoogle({ apiKey });
+    const embeddingModel = google.embeddingModel(
       "gemini-embedding-2"
     );
     const result = await withRetries(() =>
@@ -275,7 +275,7 @@ class GeminiProvider implements LlmProvider {
       Promise.resolve(
         streamText({
           model,
-          system: req.system,
+          instructions: req.system,
           prompt: req.prompt,
           temperature: req.temperature,
           maxOutputTokens: req.maxTokens,
@@ -308,7 +308,7 @@ class GeminiProvider implements LlmProvider {
                 });
               }
             : undefined,
-          onFinish: async (event) => {
+          onEnd: async (event) => {
             await req.onFinish?.({
               text: event.text,
               usage: toUsage(event.usage),

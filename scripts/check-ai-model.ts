@@ -23,6 +23,12 @@
  * error (or the key is missing). The embedding result is
  * informational and does not change the exit code.
  *
+ * Timeout: `--timeout-ms <n>` sets the per-call timeout for the two
+ * text probes (default 60_000). A diagnostic deserves a generous
+ * window — the 15 s production timeout (AI_CALL_TIMEOUT_MS) already
+ * proved too tight to tell a stall from slowness. Production is
+ * untouched.
+ *
  * Relative imports only: this runs under tsx outside Next.js.
  */
 import "dotenv/config";
@@ -39,6 +45,16 @@ dotenv.config({ path: path.join(process.cwd(), ".env.local") });
 
 const MODELS = ["gemini-2.5-flash", "gemini-3.8-flash"] as const;
 const PROBE_PROMPT = "Reply with the single word OK and nothing else.";
+const DEFAULT_TIMEOUT_MS = 60_000;
+
+function parseTimeoutMs(argv: string[]): number {
+  const index = argv.indexOf("--timeout-ms");
+  if (index === -1) return DEFAULT_TIMEOUT_MS;
+  const value = Number(argv[index + 1]);
+  return Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : DEFAULT_TIMEOUT_MS;
+}
 
 async function main(): Promise<number> {
   if (!process.env.GEMINI_API_KEY) {
@@ -48,6 +64,7 @@ async function main(): Promise<number> {
     return 2;
   }
 
+  const timeoutMs = parseTimeoutMs(process.argv.slice(2));
   const provider = getLlmProvider();
   const outcomes: ModelProbeOutcome[] = [];
 
@@ -58,6 +75,7 @@ async function main(): Promise<number> {
         prompt: PROBE_PROMPT,
         model,
         maxTokens: 16,
+        timeoutMs,
       });
       const text = result.text.trim();
       console.log(`\n${model}:`);
