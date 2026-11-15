@@ -9,7 +9,6 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import React from 'react'
 
-
  interface Props {
     type: string;
     itemId: string;
@@ -126,7 +125,6 @@ const Votes = ({
                     })
                 }
 
-                ///////////// show  a toast ////////////
                 return toast({
                     title: `Upvotes ${!hasupVoted ? 'Successfully' : 'Removed'}`,
                     variant: !hasupVoted ? 'default' : 'destructive'
@@ -158,7 +156,6 @@ const Votes = ({
                     })
                 }
 
-                ///////////// show  a toast ////////////
                 return toast({
                     title: `DownVotes ${!hasdownVoted ? 'Successfully' : 'Removed'}`,
                     variant: !hasdownVoted ? 'default' : 'destructive'

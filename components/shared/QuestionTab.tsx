@@ -15,7 +15,6 @@ const QuestionTab = async ({ searchParams, userId, clerkId }: Props) => {
   const result = await getUserQuestions({
     userId, 
     page: searchparams.page ? +searchparams.page : 1,
-    // page: searchParams.page ? +searchParams.page : 1,
   });
 
   return (

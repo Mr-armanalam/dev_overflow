@@ -1,5 +1,4 @@
  
- 
 "use client";
 import React, { useEffect, useState } from "react";
 import {
@@ -86,7 +85,7 @@ const Answer = ({ questionId }: Props) => {
     defaultValues: {
       answer: "",
     },
-  }); // follow sadcn
+  });
 
   // Render the streaming Markdown preview as sanitised HTML. A sequence
   // guard drops stale renders when chunks arrive faster than marked.
@@ -549,7 +548,6 @@ const Answer = ({ questionId }: Props) => {
                       content_css: mode === "dark" ? "dark" : "light",
                     }}
                   />
-                  {/* todo add an editor component */}
                 </FormControl>
                 <FormMessage className="text-red-900" />
               </FormItem>

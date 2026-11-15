@@ -1,6 +1,5 @@
 import Question from '@/components/components/Question'
 import { getQuestionsById } from '@/lib/actions/question.action';
-// import { ParamsProps } from '@/types';
 import { auth } from '@clerk/nextjs/server'
 import { notFound, redirect } from 'next/navigation'
 import React from 'react'

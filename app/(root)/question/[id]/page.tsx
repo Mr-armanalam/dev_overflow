@@ -16,21 +16,10 @@ import AllAnswers from "@/components/shared/AllAnswers";
 import Votes from "@/components/shared/Votes";
 import { notFound } from "next/navigation";
 
-
 type Params = Promise<{ id: string }>
 type SearchParams = Promise<{ [key: string]: string | string[] }>
 
-// const page = async ({
-//   params,
-//   searchParams,
-// }: {
-//   params: { id: string };
-//   searchParams: { [key: string]: string | string[] };
-// }) => {
-
-
 const page = async (props: { params: Params, searchParams: SearchParams}) => {
-  //////////////////   console.log(params);    ////////////////////////
 
   const { id } = await props.params;
   const searchparams = await props.searchParams;
@@ -95,7 +84,7 @@ const page = async (props: { params: Params, searchParams: SearchParams}) => {
             <Votes
               type="Question"
               itemId={JSON.stringify(result._id)}
-              userId={mongoUser ? JSON.stringify(mongoUser._id) : undefined} //////////// for findig current user ///////////////////
+              userId={mongoUser ? JSON.stringify(mongoUser._id) : undefined}
               authorId={JSON.stringify(result.author._id)}
               upvotes={result.upvotes.length}
               hasupVoted={mongoUser ? result.upvotes.includes(mongoUser._id) : false}
@@ -120,7 +109,7 @@ const page = async (props: { params: Params, searchParams: SearchParams}) => {
         <Metric
           imgUrl="/assets/icons/message.svg"
           alt="Upvotes"
-          value={formatNumber(result.answers?.length)} ///////////  Edited  ////////////
+          value={formatNumber(result.answers?.length)}
           title="Answers"
           textStyles="small-medium text-dark400_light800"
         />
@@ -148,12 +137,10 @@ const page = async (props: { params: Params, searchParams: SearchParams}) => {
 
       <AllAnswers
         questionId={result._id}
-        userId={mongoUser?._id}  ///////////////// Edited /////////////////
+        userId={mongoUser?._id}
         totalAnswers={result.answers?.length}
         page={searchparams.page }
         filter={searchparams.filter}
-        // page={props.searchParams?.page }
-        // filter={props.searchParams?.filter}
       />
 
       {mongoUser ? (

@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { getUserInfo } from "@/lib/actions/user.action";
-// import { URLProps } from "@/types";
 import { Show } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import Image from "next/image";
@@ -26,7 +25,6 @@ export const metadata: Metadata = {
 type Params = Promise<{ id: string }>
 type SearchParams = Promise<{ [key: string]: string | undefined }>
 
-// const Page = async ({ params, searchParams }: URLProps) => {
 const Page = async (props: { params: Params, searchParams: SearchParams}) => {
 
   const { userId: clerkId } = await auth();

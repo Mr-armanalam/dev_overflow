@@ -21,7 +21,6 @@ import { assignBadges } from "../utils";
 import { getAuthenticatedUser } from "@/lib/auth";
 
 export async function getUserById(params: GetUserByIdParams) {
-  //////////////edited //////////////
   try {
     await connectToDatabase();
 
@@ -59,7 +58,6 @@ export async function updateUser(params: UpdateUserParams) {
       throw new Error("Forbidden: you can only update your own profile");
     }
 
-    // const newUser =
     await User.findOneAndUpdate({ clerkId }, updateData, { returnDocument: 'after' });
 
     revalidatePath(path);
@@ -330,13 +328,3 @@ export async function getUserAnswers(params: GetUserStatsParams) {
     throw error;
   }
 }
-
-// export async function getAllUsers(params: GetAllUsersParams) {
-//     try {
-//         connectToDatabase();
-
-//     } catch (error) {
-//         console.log(error);
-//         throw error
-//     }
-// }

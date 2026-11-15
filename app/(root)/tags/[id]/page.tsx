@@ -4,13 +4,11 @@ import Pagination from '@/components/shared/Pagination'
 import LocalSearchbar from '@/components/shared/search/LocalSearchbar'
 import { getQuesionsByTagId } from '@/lib/actions/tag.action'
 import { auth } from '@clerk/nextjs/server'
-// import { URLProps } from '@/types'
 import React from 'react'
 
 type Params = Promise<{ id: string }>
 type SearchParams = Promise<{ [key: string]: string | undefined }>
 
-// const Page = async ({params, searchParams}: URLProps) => {
 const Page = async (props: { params: Params, searchParams: SearchParams }) => {
   const searchparams = await props.searchParams;
   const paraams = await props.params

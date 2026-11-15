@@ -1,12 +1,9 @@
 import Profile from '@/components/forms/Profile';
 import ApiKeysManager from '@/components/shared/ApiKeysManager';
 import { getUserById } from '@/lib/actions/user.action';
-// import { ParamsProps } from '@/types';
 import { auth } from '@clerk/nextjs/server'
 import React from 'react'
 
- 
-// const Page = async ({params}: ParamsProps) => {
 const Page = async () => {
 
   const { userId} = await auth();
