@@ -14,7 +14,7 @@ Dev Overflow is a developer Q&A platform: ask questions, write answers, vote on 
 
 ### AI-assisted answering
 
-- Streaming answer drafts (Gemini 2.5 Flash) with citations to similar questions retrieved from MongoDB Atlas Vector Search (gemini-embedding-2, 768 dimensions)
+- Streaming answer drafts (Gemini 3.8 Flash) with citations to similar questions retrieved from MongoDB Atlas Vector Search (gemini-embedding-2, 768 dimensions)
 - Drafts are never published automatically: the user reviews the draft, inserts it into the editor, edits, and submits. AI-assisted answers are badged and earn no reputation
 - Tag suggestions for a question draft
 - Live similar-question suggestions while asking, with duplicate detection (suggestion only, never auto-close); moderators review duplicates in `/admin/duplicates`
@@ -36,7 +36,7 @@ Dev Overflow is a developer Q&A platform: ask questions, write answers, vote on 
 | Auth | Clerk 7.9.26 (authentication, webhooks) |
 | Validation | Zod 4.6.7 |
 | Editor | TinyMCE 8.10.2 (`@tinymce/tinymce-react` 6.3.1) |
-| AI | Vercel AI SDK 5.0.289, `@google/genai` 2.32.0; Gemini 2.5 Flash, gemini-embedding-2 |
+| AI | Vercel AI SDK 5.0.289, `@google/genai` 2.32.0; Gemini 3.8 Flash, gemini-embedding-2 |
 | MCP | `@modelcontextprotocol/sdk` 1.32.2 |
 | Cache / rate limit | Upstash Redis 1.41.0, `@upstash/ratelimit` 2.2.1 |
 | Testing | Vitest 4 |

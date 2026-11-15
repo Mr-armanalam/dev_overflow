@@ -76,7 +76,7 @@ Rules for adding a pair:
 ## Known limitations
 
 - **Self-judging bias:** the judge is the same flash model that
-  wrote the draft. A stronger judge (e.g. gemini-2.5-pro) is future
+  wrote the draft. A stronger judge (e.g. a pro-tier model) is future
   work (P5); for now, treat a borderline pass (0.80–0.85) as "review
   the failed pairs by hand" rather than a clean bill of health.
 - **Syntax-only code check:** a block can parse and still be wrong

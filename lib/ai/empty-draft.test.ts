@@ -16,7 +16,7 @@ function draft(text: string): CachedDraft {
   return {
     text,
     sources: [],
-    modelName: "gemini-2.5-flash",
+    modelName: "gemini-3.8-flash",
     promptId: "answer-draft",
     promptVersion: 3,
   };
