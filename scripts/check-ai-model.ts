@@ -3,10 +3,12 @@
  *
  *   npm run check:ai-model
  *
- * Tests gemini-2.5-flash first, then gemini-3.8-flash (the model
- * Google's 404 names as the replacement), plus the gemini-embedding-2
- * call the RAG path needs. Prints per-model finishReason, text,
- * tokens and latency — never the key.
+ * Tests gemini-3.5-flash-lite first (the current router model —
+ * confirmed working on v1 on 15 Nov 2026: HTTP 200, finishReason
+ * STOP, text "OK"), then gemini-2.5-flash and gemini-3.8-flash for
+ * diagnostics, plus the gemini-embedding-2 call the RAG path
+ * needs. Prints per-model finishReason, text, tokens and latency
+ * — never the key.
  *
  * Why this exists: drafts started coming back empty on a cleanly
  * finished stream. gemini-2.5-flash is deprecated (shutdown Dec 1
@@ -18,12 +20,12 @@
  * the model/key or the prompt (safety block shows up as
  * finishReason "content-filter").
  *
- * Exit codes: 0 if either text model returns non-empty text, 1 if
- * both answer cleanly but empty (safety-block shape), 2 if both
+ * Exit codes: 0 if any text model returns non-empty text, 1 if
+ * all answer cleanly but empty (safety-block shape), 2 if all
  * error (or the key is missing). The embedding result is
  * informational and does not change the exit code.
  *
- * Timeout: `--timeout-ms <n>` sets the per-call timeout for the two
+ * Timeout: `--timeout-ms <n>` sets the per-call timeout for the
  * text probes (default 60_000). A diagnostic deserves a generous
  * window — the 15 s production timeout (AI_CALL_TIMEOUT_MS) already
  * proved too tight to tell a stall from slowness. Production is
@@ -43,7 +45,11 @@ import {
 // dotenv/config loads `.env` only — the app's vars live in `.env.local`.
 dotenv.config({ path: path.join(process.cwd(), ".env.local") });
 
-const MODELS = ["gemini-2.5-flash", "gemini-3.8-flash"] as const;
+const MODELS = [
+  "gemini-3.5-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-3.8-flash",
+] as const;
 const PROBE_PROMPT = "Reply with the single word OK and nothing else.";
 const DEFAULT_TIMEOUT_MS = 60_000;
 
@@ -113,7 +119,7 @@ async function main(): Promise<number> {
       ? "\nResult: at least one model answers with text."
       : code === 1
         ? "\nResult: models answer but return empty text — check the finishReason above (content-filter = safety block)."
-        : "\nResult: both models errored — check the error messages above."
+        : "\nResult: all models errored — check the error messages above."
   );
   return code;
 }
