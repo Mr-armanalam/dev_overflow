@@ -17,7 +17,7 @@ import Question from "@/database/question.model";
 import Tag from "@/database/tag.model";
 import Answer from "@/database/answer.model";
 import { BadgeCriteriaType } from "@/types";
-import { assignBadges } from "../utils";
+import { assignBadges, escapeRegExp } from "../utils";
 import { getAuthenticatedUser } from "@/lib/auth";
 
 export async function getUserById(params: GetUserByIdParams) {
@@ -75,8 +75,8 @@ export async function getAllUsers(params: GetAllUsersParams) {
 
     if (searchQuery) {
       query.$or = [
-        { username: new RegExp(searchQuery, "i") },
-        { name: new RegExp(searchQuery, "i") },
+        { username: new RegExp(escapeRegExp(searchQuery), "i") },
+        { name: new RegExp(escapeRegExp(searchQuery), "i") },
       ];
     }
 
@@ -155,7 +155,7 @@ export async function getSavedQuestion(params: GetSavedQuestionsParams) {
     const skipAmount = (page - 1) * pageSize;
 
     const query: QueryFilter<typeof Question> = searchQuery
-      ? { title: { $regex: new RegExp(searchQuery, "i") } }
+      ? { title: { $regex: new RegExp(escapeRegExp(searchQuery), "i") } }
       : {};
 
     const user = await User.findOne({ clerkId }).populate({

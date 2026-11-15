@@ -132,3 +132,12 @@ export const formatAIGeneratedText = (aiText: any) => {
 
   return formattedText;
 };
+/**
+ * Escape a user-supplied string for safe use inside a RegExp (or a
+ * MongoDB $regex). Without this, a search term containing regex syntax
+ * such as `(`, `[` or `.*` either throws (invalid pattern) or matches
+ * far more than the literal text.
+ */
+export function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}

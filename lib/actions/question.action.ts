@@ -13,6 +13,7 @@ import { revalidatePath } from "next/cache";
 import Answer from "@/database/answer.model";
 import Interaction from "@/database/interaction.model";
 import { getAuthenticatedUser, isSameId } from "@/lib/auth";
+import { escapeRegExp } from "@/lib/utils";
 import {
   deleteChunksFor,
   indexQuestion,
@@ -29,8 +30,8 @@ export async function getQuestions(params: GetQuestionsParams) {
     const query : QueryFilter<typeof Question> = {};
     if (searchQuery) {
       query.$or = [
-        { title: { $regex: new RegExp(searchQuery, "i") }},
-        { content: { $regex: new RegExp(searchQuery, "i") }},
+        { title: { $regex: new RegExp(escapeRegExp(searchQuery), "i") }},
+        { content: { $regex: new RegExp(escapeRegExp(searchQuery), "i") }},
       ]
     }
 
@@ -82,7 +83,7 @@ export async function createQuestion(params: CreateQuestionParams) {
 
     for (const tag of tags) {
       const existingTag = await Tag.findOneAndUpdate(
-        { name: { $regex: new RegExp(`^${tag}$`, "i") } },
+        { name: { $regex: new RegExp(`^${escapeRegExp(tag)}$`, "i") } },
         { $setOnInsert: { name: tag }, $push: { questions: question._id } },
         { upsert: true, returnDocument: 'after' }
       );
@@ -232,13 +233,18 @@ export async function downvoteQuestion(params: QuestionVoteParams): Promise<{ su
       throw new Error("Question not found");
     }
 
+    // Mirror the upvote logic with the opposite signs — and mirror
+    // downvoteAnswer: a new downvote costs the voter 2 and the author
+    // 10; removing a downvote refunds both. (Previously both branches
+    // were inverted: a fresh downvote REWARDED the voter +2 and the
+    // author +10.)
     await User.findByIdAndUpdate(userId, {
-      $inc: { reputation: hasupVoted ? -2: 2}
-    })
+      $inc: { reputation: hasdownVoted ? 2 : -2 },
+    });
 
     await User.findByIdAndUpdate(question.author, {
-      $inc: { reputation: hasdownVoted? -10: 10}
-    })
+      $inc: { reputation: hasdownVoted ? 10 : -10 },
+    });
 
     revalidatePath(path);
     return { success: true };
@@ -391,8 +397,11 @@ export async function getRecommentedQuestions(params: RecommendedParams){
 
     if(searchQuery) {
       query.$or = [
-        { $title: { $regex: searchQuery, $options: "i"} },
-        { content: { $regex: searchQuery, $options: "i"}}
+        // Field name is `title` — `$title` is not a MongoDB operator,
+        // so a Recommended search used to throw. The term is escaped
+        // so regex syntax in it matches literally.
+        { title: { $regex: escapeRegExp(searchQuery), $options: "i"} },
+        { content: { $regex: escapeRegExp(searchQuery), $options: "i"}}
       ];
     }
 
@@ -410,7 +419,7 @@ export async function getRecommentedQuestions(params: RecommendedParams){
     .skip(skipAmount)
     .limit(pageSize);
 
-    const isNext = totalQustions > recommendedQuestions.length;
+    const isNext = totalQustions > skipAmount + recommendedQuestions.length;
 
     return { questions: recommendedQuestions, isNext}
 
