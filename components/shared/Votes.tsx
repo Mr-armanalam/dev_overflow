@@ -7,7 +7,6 @@ import { toggleSaveQuestion } from '@/lib/actions/user.action';
 import { formatNumber } from '@/lib/utils';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import React from 'react'
 
  interface Props {
     type: string;

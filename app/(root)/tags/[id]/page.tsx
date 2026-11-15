@@ -4,7 +4,6 @@ import Pagination from '@/components/shared/Pagination'
 import LocalSearchbar from '@/components/shared/search/LocalSearchbar'
 import { getQuesionsByTagId } from '@/lib/actions/tag.action'
 import { auth } from '@clerk/nextjs/server'
-import React from 'react'
 
 type Params = Promise<{ id: string }>
 type SearchParams = Promise<{ [key: string]: string | undefined }>

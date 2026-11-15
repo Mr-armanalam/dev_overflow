@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { GlobalSearchFilters } from "@/constants/filters";
 import { formUrlQuery } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useState } from "react";
+import { useState } from "react";
 
 const GlobalFilters = () => {
   const router = useRouter();

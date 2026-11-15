@@ -1,10 +1,8 @@
 # RAG setup — Atlas Vector Search (free M0 tier)
 
-> **Correction (13 Nov 2026):** Atlas Vector Search runs on every tier
-> including the free **M0** since 2024 (GA) — verified against MongoDB's
-> official docs. The old design-doc claim that M10+ is required is
-> wrong; only *dedicated search nodes* need M10+. **No tier upgrade is
-> needed for P2.**
+> Atlas Vector Search runs on every tier including the free **M0**
+> since 2024 (GA). Only *dedicated search nodes* need M10+ — no tier
+> upgrade is needed for this feature.
 >
 > M0 limits that shape this implementation: 512 MB storage, 100 ops/sec,
 > shared compute, only a few search indexes per cluster, a subset of
@@ -63,12 +61,10 @@ this, so the backfill is a one-off.
   headings when longer. Tag names ride inside the question chunk text.
 - **Embeddings:** `gemini-embedding-2`, requested at 768 dimensions
   via `outputDimensionality` (Matryoshka truncation) to match the
-  Atlas index, via the same `LlmProvider` path as the P1 draft calls
+  Atlas index, via the same `LlmProvider` path as the draft calls
   (`lib/ai/client.ts`). (`text-embedding-004` was shut down by Google
-  on Jan 14, 2026 — the backfill 404'd on it, hence this model.
-  `gemini-embedding-001` was considered and rejected: it already
-  carries a May 14, 2028 shutdown date, with `gemini-embedding-2`
-  as Google's recommended replacement.)
+  on Jan 14, 2026; `gemini-embedding-001` carries a May 14, 2028
+  shutdown date.)
 - **Retrieval:** `$vectorSearch` top-12 by cosine → rerank
   `0.6·cosine + 0.25·(upvotes normalised) + 0.15·recency decay` → top-5.
 - **Indexing:** fire-and-forget from `createQuestion` / `createAnswer` /

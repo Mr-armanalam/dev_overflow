@@ -66,8 +66,7 @@ export async function enforceMcpRateLimit(
   let result;
   try {
     result = await limiter.limit(`key:${keyId}`);
-  } catch (error) {
-    console.error("MCP rate limit check failed, allowing request", error);
+  } catch {
     return { limited: false };
   }
   if (result.success) {
@@ -84,8 +83,8 @@ export async function enforceMcpRateLimit(
       status: "rejected",
       errorCode: "RATE_LIMITED",
     });
-  } catch (error) {
-    console.error("Failed to log rate-limited MCP call", error);
+  } catch {
+    // Deliberately silent — this failure is swallowed by design.
   }
   const retryAfterSeconds = Math.max(
     1,

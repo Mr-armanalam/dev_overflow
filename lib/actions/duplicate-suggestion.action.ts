@@ -83,7 +83,6 @@ export async function getPendingDuplicateSuggestions(): Promise<{
       .lean<PopulatedSuggestion[]>();
     return { success: true, suggestions: rows.map(toDTO) };
   } catch (error) {
-    console.log(error);
     return {
       success: false,
       error:
@@ -125,8 +124,7 @@ export async function linkDuplicateSuggestionToQuestion(params: {
       await suggestion.save();
     }
     return { success: true };
-  } catch (error) {
-    console.log(error);
+  } catch {
     return { success: false, error: "Could not link duplicate suggestion" };
   }
 }
@@ -156,7 +154,6 @@ export async function reviewDuplicateSuggestion(params: {
     revalidatePath("/admin/duplicates");
     return { success: true };
   } catch (error) {
-    console.log(error);
     return {
       success: false,
       error:

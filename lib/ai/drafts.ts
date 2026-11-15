@@ -26,7 +26,7 @@ export async function markAiDraftUsed(params: {
       { status: "used" },
       { sort: { createdAt: -1 } }
     );
-  } catch (error) {
-    console.log("markAiDraftUsed failed (non-fatal)", error);
+  } catch {
+    // Deliberately silent — this failure is swallowed by design.
   }
 }

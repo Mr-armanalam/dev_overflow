@@ -70,8 +70,8 @@ export async function authenticateApiKey(
   try {
     key.lastUsedAt = new Date();
     await key.save();
-  } catch (error) {
-    console.error("Failed to bump ApiKey lastUsedAt (non-fatal)", error);
+  } catch {
+    // Deliberately silent — this failure is swallowed by design.
   }
 
   return { key, userId: key.userId, scopes: key.scopes };

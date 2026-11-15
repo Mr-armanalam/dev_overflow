@@ -1,4 +1,4 @@
-# Evals — answer-draft quality gate (design §9.2)
+# Evals — answer-draft quality gate
 
 `scripts/eval-ai.ts` runs the current answer-draft pipeline against
 the golden set in `evals/golden.json` and scores it. **No prompt or
@@ -8,7 +8,7 @@ model change merges without this script passing.**
 
 ```bash
 # Needs .env.local with MONGODB_URL (Atlas cluster with the vector
-# index + embeddings from the P2 backfill) and GEMINI_API_KEY.
+# index + embeddings from the backfill) and GEMINI_API_KEY.
 npm run eval:ai
 
 # Options:
@@ -77,7 +77,7 @@ Rules for adding a pair:
 
 - **Self-judging bias:** the judge is the same flash model that
   wrote the draft. A stronger judge (e.g. a pro-tier model) is future
-  work (P5); for now, treat a borderline pass (0.80–0.85) as "review
+  work; for now, treat a borderline pass (0.80–0.85) as "review
   the failed pairs by hand" rather than a clean bill of health.
 - **Syntax-only code check:** a block can parse and still be wrong
   (wrong API, wrong logic). It catches malformed code, not
@@ -86,5 +86,5 @@ Rules for adding a pair:
   database. On an empty or unindexed database, retrieval returns
   nothing and the draft must say "No similar questions found" —
   faithfulness then measures the general-knowledge answer only.
-  Run the P2 backfill (`npm run backfill:embeddings`) before
+  Run the backfill (`npm run backfill:embeddings`) before
   treating a baseline as meaningful.

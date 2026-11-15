@@ -14,7 +14,7 @@ import {
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
-import React, { useState } from "react";
+import { useState } from "react";
 import { ProfileSchema } from "@/lib/validation";
 import { usePathname, useRouter } from "next/navigation";
 import { updateUser } from "@/lib/actions/user.action";
@@ -58,8 +58,8 @@ const Profile = ({ clerkId, user }: Props) => {
       });
 
       router.back();
-    } catch (error) {
-      console.log(error);
+    } catch {
+      // Deliberately silent — this failure is swallowed by design.
     } finally {
       setIsSubmitting(false);
     }

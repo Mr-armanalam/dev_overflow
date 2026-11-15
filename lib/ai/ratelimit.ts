@@ -85,8 +85,7 @@ export async function enforceAiBurstLimit(
   let result;
   try {
     result = await limiterInstance.limit(`ip:${getClientIp(request)}`);
-  } catch (error) {
-    console.error("AI burst limit check failed, allowing request", error);
+  } catch {
     return { limited: false };
   }
   if (result.success) {
@@ -102,8 +101,8 @@ export async function enforceAiBurstLimit(
       status: "rejected",
       errorCode: "RATE_LIMITED",
     });
-  } catch (error) {
-    console.error("Failed to log rate-limited AI call", error);
+  } catch {
+    // Deliberately silent — this failure is swallowed by design.
   }
   const retryAfterSeconds = Math.max(
     1,

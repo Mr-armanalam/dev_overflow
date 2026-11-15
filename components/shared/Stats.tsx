@@ -1,7 +1,6 @@
 import { formatNumber } from "@/lib/utils";
 import { BadgeCounts } from "@/types";
 import Image from "next/image";
-import React from "react";
 
 interface StatesCardProps {
   imgUrl: string;

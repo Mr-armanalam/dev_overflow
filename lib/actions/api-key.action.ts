@@ -68,7 +68,6 @@ export async function createApiKey(params: {
     // show it once and never store it.
     return { success: true, key: rawKey };
   } catch (error) {
-    console.log(error);
     const message =
       error instanceof Error ? error.message : "Could not create API key";
     if (message.startsWith("Unauthorized:") || message.startsWith("Forbidden:")) {
@@ -107,8 +106,7 @@ export async function listApiKeys(): Promise<{
         createdAt: key.createdAt.toISOString(),
       })),
     };
-  } catch (error) {
-    console.log(error);
+  } catch {
     return { success: false, error: "Could not list API keys" };
   }
 }
@@ -138,8 +136,7 @@ export async function revokeApiKey(params: {
     }
     revalidatePath("/profile/edit");
     return { success: true };
-  } catch (error) {
-    console.log(error);
+  } catch {
     return { success: false, error: "Could not revoke API key" };
   }
 }

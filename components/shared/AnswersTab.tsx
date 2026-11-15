@@ -1,6 +1,5 @@
 import { getUserAnswers } from '@/lib/actions/user.action';
 import { SearchParamsProps } from '@/types'
-import React from 'react'
 import AnswerCard from '../cards/AnswerCard';
 import Pagination from './Pagination';
 

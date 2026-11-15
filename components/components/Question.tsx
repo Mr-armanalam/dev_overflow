@@ -137,10 +137,9 @@ const Question = ({type, questionDetails}: Props) => {
               })
             : null
         );
-      } catch (error) {
+      } catch {
         // Similar lookup is a nice-to-have: never block asking.
         if (seq === similarSeq.current) {
-          console.log(error);
           setSimilarQuestions([]);
           setDuplicateSuggest(null);
         }
@@ -170,7 +169,7 @@ const Question = ({type, questionDetails}: Props) => {
           await linkDuplicateSuggestionToQuestion({
             suggestionId: duplicateSuggest.suggestionId,
             questionId: parsedQuestionDetails?._id,
-          }).catch((error) => console.log(error));
+          }).catch(() => { /* best-effort link — failures are silent by design */ });
         }
         router.push(`/question/${parsedQuestionDetails?._id}`);
 
@@ -187,14 +186,14 @@ const Question = ({type, questionDetails}: Props) => {
           await linkDuplicateSuggestionToQuestion({
             suggestionId: duplicateSuggest.suggestionId,
             questionId: created.questionId,
-          }).catch((error) => console.log(error));
+          }).catch(() => { /* best-effort link — failures are silent by design */ });
         }
 
         router.push('/');
       }
      
-    } catch (error) {
-      console.log(error);
+    } catch {
+      // Deliberately silent — this failure is swallowed by design.
     } finally {
       setIsSubmitting(false);
     }
@@ -271,8 +270,7 @@ const Question = ({type, questionDetails}: Props) => {
           ? tags.filter((t): t is string => typeof t === "string")
           : []
       );
-    } catch (error) {
-      console.log(error);
+    } catch {
       setTagSuggestError("Tag suggestion failed. Please try again.");
     } finally {
       setIsSuggestingTags(false);

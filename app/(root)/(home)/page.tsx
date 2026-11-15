@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { HomePageFilters } from "@/constants/filters";
 import { getQuestions, getRecommentedQuestions } from "@/lib/actions/question.action";
 import Link from "next/link";
-import React from "react";
 
 import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";

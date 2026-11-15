@@ -9,7 +9,6 @@ import { QuestionFilters } from "@/constants/filters";
 import { getSavedQuestion } from "@/lib/actions/user.action";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import React from "react";
 
 type SearchParams = Promise<{ [key: string]: string | undefined }>
 

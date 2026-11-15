@@ -120,8 +120,7 @@ export const POST = async (request: Request) => {
         { ...cached, fallback: false },
         { headers: { "x-ai-cache": "exact", "x-ai-usage-log-id": String(log._id) } }
       );
-    } catch (error) {
-      console.error("Failed to log cached AI tag call", error);
+    } catch {
       return NextResponse.json(
         { ...cached, fallback: false },
         { headers: { "x-ai-cache": "exact" } }
@@ -148,8 +147,8 @@ export const POST = async (request: Request) => {
         status: "rejected",
         errorCode: "BUDGET_EXCEEDED",
       });
-    } catch (error) {
-      console.error("Failed to log rejected AI tag call", error);
+    } catch {
+      // Deliberately silent — this failure is swallowed by design.
     }
     return NextResponse.json(
       {
@@ -273,8 +272,8 @@ export const POST = async (request: Request) => {
             ? error.message.slice(0, 200)
             : "PROVIDER_ERROR",
       });
-    } catch (logError) {
-      console.error("Failed to log failed AI tag call", logError);
+    } catch {
+      // Deliberately silent — this failure is swallowed by design.
     }
     return NextResponse.json(
       { error: "AI tag suggestion failed. Please try again." },

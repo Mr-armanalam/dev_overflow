@@ -1,4 +1,4 @@
-# Upstash Redis setup (P3 — cache + rate limiting)
+# Upstash Redis setup (cache + rate limiting)
 
 The AI cache (exact + semantic) and the per-IP burst limit on `/api/ai/*`
 run on Upstash Redis. Upstash is serverless Redis over HTTPS — no TCP
@@ -6,7 +6,7 @@ connection, no pool, which is why it works from Vercel serverless
 functions. The code uses the `@upstash/redis` client and the
 `@upstash/ratelimit` package (already in `package.json`).
 
-## 1. Create the free-tier database (Arman's step, ~5 minutes)
+## 1. Create the free-tier database (manual step, ~5 minutes)
 
 1. Go to https://console.upstash.com and sign up / sign in (GitHub
    sign-in works; no credit card is needed for the free tier).

@@ -25,7 +25,6 @@ export async function getUserById(params: GetUserByIdParams) {
     await connectToDatabase();
 
     const { userId } = params;
-    console.log("higetuser", userId);
 
     const user = await User.findOne({ clerkId: userId });
 
@@ -35,7 +34,6 @@ export async function getUserById(params: GetUserByIdParams) {
 
     return user;
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -62,7 +60,6 @@ export async function updateUser(params: UpdateUserParams) {
 
     revalidatePath(path);
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -110,7 +107,6 @@ export async function getAllUsers(params: GetAllUsersParams) {
 
     return { users, isNext };
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -147,7 +143,6 @@ export async function toggleSaveQuestion(params: ToggleSaveQuestionParams) {
 
     revalidatePath(path);
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -187,7 +182,6 @@ export async function getSavedQuestion(params: GetSavedQuestionsParams) {
 
     return { questions: savedQuestion, isNext };
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -274,7 +268,6 @@ export async function getUserInfo(params: GetUserByIdParams) {
       reputation: user.reputation,
     };
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -299,7 +292,6 @@ export async function getUserQuestions(params: GetUserStatsParams) {
 
     return { totalQuestions, questions: userQuestions, isNext };
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
@@ -324,7 +316,6 @@ export async function getUserAnswers(params: GetUserStatsParams) {
 
     return { totalAnswers, answers: userAnswers, isNext };
   } catch (error) {
-    console.log(error);
     throw error;
   }
 }
