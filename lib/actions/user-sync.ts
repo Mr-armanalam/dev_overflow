@@ -76,9 +76,11 @@ export async function deleteUser(params: DeleteUserParams) {
     await Question.deleteMany({ author: user._id });
 
     // ... and remove them from other users' saved lists.
+    // `saved` holds question ids, so pull the deleted user's question
+    // ids — not the user's own id, which never appears there.
     await User.updateMany(
-      { saved: user._id },
-      { $pull: { saved: user._id } }
+      { saved: { $in: userQuestionIds } },
+      { $pull: { saved: { $in: userQuestionIds } } }
     );
 
     return user;

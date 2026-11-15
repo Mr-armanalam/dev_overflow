@@ -172,11 +172,11 @@ export async function getSavedQuestion(params: GetSavedQuestionsParams) {
       ],
     });
 
-    const isNext = user.saved.length > pageSize;
-
     if (!user) {
       throw new Error("User not found");
     }
+
+    const isNext = user.saved.length > pageSize;
 
     const savedQuestion = user.saved;
 
@@ -231,12 +231,12 @@ export async function getUserInfo(params: GetUserByIdParams) {
         },
       },
     ]);
-    const [questionViews] = await Answer.aggregate([
+    const [questionViews] = await Question.aggregate([
       { $match: { author: user._id } },
       {
         $group: {
           _id: null,
-          totalUpvotes: { $sum: "$views" },
+          totalViews: { $sum: "$views" },
         },
       },
     ]);

@@ -44,7 +44,9 @@ export async function globalSearch(params: SearchParams) {
         }
 
        }else {
-        const modelInfo = modelsAndTypes.find((item) => item.type === type)  
+        // Look the model up by the lowercased type: the raw `type`
+        // may be any case ("Question"), and the table keys are lowercase.
+        const modelInfo = modelsAndTypes.find((item) => item.type === typeLower)  
 
         if(!modelInfo) {
             throw new Error(`Invalid search type: ${type}`);
@@ -55,9 +57,9 @@ export async function globalSearch(params: SearchParams) {
         }).limit(8);
 
         results = queryResult.map((item) => ({
-            title: type === 'answer' ? `Answers containing ${query}`: item[modelInfo.searchField],
-            type,
-            id: type === 'user' ? item.clerkId : type === 'answer' ? item.question: item._id
+            title: typeLower === 'answer' ? `Answers containing ${query}`: item[modelInfo.searchField],
+            type: typeLower,
+            id: typeLower === 'user' ? item.clerkId : typeLower === 'answer' ? item.question: item._id
         }))
        }
        

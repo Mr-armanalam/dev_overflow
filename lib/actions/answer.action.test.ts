@@ -157,11 +157,11 @@ describe("createAnswer", () => {
     });
   });
 
-  // BUG (answer.action.ts, createAnswer): when the question does not
+  // Fixed bug (answer.action.ts, createAnswer): when the question does not
   // exist, `Question.findByIdAndUpdate` resolves null and the next
   // line reads `questionObject.tags`, throwing a bare TypeError
   // instead of a clean "Question not found".
-  it.skip("rejects with 'Question not found' when the question does not exist", async () => {
+  it("rejects with 'Question not found' when the question does not exist", async () => {
     mocks.answer.create.mockResolvedValue({ _id: ANSWER_ID });
     mocks.question.findByIdAndUpdate.mockResolvedValue(null);
 

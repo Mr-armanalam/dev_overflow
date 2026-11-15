@@ -138,11 +138,11 @@ describe("globalSearch", () => {
     expect(JSON.parse(result as string)).toEqual([]);
   });
 
-  // BUG (general.action.ts, globalSearch): the type is lowercased for
+  // Fixed bug (general.action.ts, globalSearch): the type is lowercased for
   // validation (`typeLower`) but the model lookup uses the raw `type`,
   // so `type: "Question"` passes validation and then throws "Invalid
   // search type: Question".
-  it.skip("accepts a search type regardless of case", async () => {
+  it("accepts a search type regardless of case", async () => {
     mocks.question.find.mockImplementation(() =>
       chainable([{ _id: "q1", title: "How to useState" }]),
     );
