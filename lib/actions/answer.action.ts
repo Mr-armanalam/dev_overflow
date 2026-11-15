@@ -34,6 +34,10 @@ export async function createAnswer(params: CreateAnswerParams) {
       $push: { answers: newAnswer._id },
     });
 
+    if (!questionObject) {
+      throw new Error("Question not found");
+    }
+
     await Interaction.create({
       user: author,
       action: "answer",

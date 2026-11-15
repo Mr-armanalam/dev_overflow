@@ -581,11 +581,11 @@ describe("downvoteQuestion", () => {
     );
   });
 
-  // BUG (question.action.ts, downvoteQuestion): a self-vote throws
+  // Fixed bug (question.action.ts, downvoteQuestion): a self-vote throws
   // instead of returning { success: false, error } like upvoteQuestion
   // and both answer vote actions do — the client shows a full-screen
   // runtime-error overlay instead of a toast.
-  it.skip("returns an error without writing when the author downvotes their own question", async () => {
+  it("returns an error without writing when the author downvotes their own question", async () => {
     mocks.question.findById.mockReturnValue(chainable(questionDoc()));
 
     const result = await downvoteQuestion({
@@ -645,11 +645,11 @@ describe("deleteQuestion", () => {
     expect(mocks.revalidate).toHaveBeenCalledWith("/");
   });
 
-  // BUG (question.action.ts, deleteQuestion): the tag cleanup filters
+  // Fixed bug (question.action.ts, deleteQuestion): the tag cleanup filters
   // on `{ question: questionId }`, but the Tag schema field is
   // `questions` (plural) — the update matches nothing and the deleted
   // question id stays in tags' `questions` arrays.
-  it.skip("removes the deleted question from its tags' question lists", async () => {
+  it("removes the deleted question from its tags' question lists", async () => {
     mocks.question.findById.mockReturnValue(chainable(questionDoc()));
     mocks.question.deleteOne.mockResolvedValue({ deletedCount: 1 });
     mocks.answer.deleteMany.mockResolvedValue({ deletedCount: 0 });

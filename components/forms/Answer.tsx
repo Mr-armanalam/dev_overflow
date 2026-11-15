@@ -10,7 +10,7 @@ import {
 } from "../ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { AnserSchema } from "@/lib/validation";
+import { AnswerSchema } from "@/lib/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Editor } from "@tinymce/tinymce-react";
 import type { Editor as TinyMCEEditor } from "tinymce";
@@ -125,8 +125,8 @@ const Answer = ({ questionId }: Props) => {
 
   const { mode } = useTheme();
   const editorRef = React.useRef<TinyMCEEditor | null>(null);
-  const form = useForm<z.infer<typeof AnserSchema>>({
-    resolver: zodResolver(AnserSchema),
+  const form = useForm<z.infer<typeof AnswerSchema>>({
+    resolver: zodResolver(AnswerSchema),
     defaultValues: {
       answer: "",
     },
@@ -170,7 +170,7 @@ const Answer = ({ questionId }: Props) => {
     setAiDegradedSimilar([]);
   };
 
-  const handleCreateAnswer = async (values: z.infer<typeof AnserSchema>) => {
+  const handleCreateAnswer = async (values: z.infer<typeof AnswerSchema>) => {
     setIsSubmitting(true);
 
     try {

@@ -209,7 +209,10 @@ export async function downvoteQuestion(params: QuestionVoteParams): Promise<{ su
     }
 
     if (isSameId(existingQuestion.author, userId)) {
-      throw new Error("You cannot vote on your own question");
+      // Expected user error, not an exception: return it so the client
+      // can show a toast. Throwing here surfaces as a full-screen
+      // Next.js runtime-error overlay in the browser.
+      return { success: false, error: "You cannot vote on your own question" };
     }
 
     let updateQuery = {};
@@ -274,7 +277,7 @@ export async function deleteQuestion(params: DeleteQuestionParams) {
     await Question.deleteOne({ _id: questionId });
     await Answer.deleteMany({ question: questionId });
     await Interaction.deleteMany({ question: questionId });
-    await Tag.updateMany({ question: questionId },{ $pull: { questions: questionId } });
+    await Tag.updateMany({ questions: questionId },{ $pull: { questions: questionId } });
 
     // RAG: drop the question's chunks (fire-and-forget, never throws).
     void deleteChunksFor(questionId);

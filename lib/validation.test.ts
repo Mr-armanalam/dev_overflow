@@ -2,12 +2,9 @@
  * Tests for the Zod validation schemas in lib/validation.ts. These are
  * the shapes the ask-question / answer / profile forms validate
  * against, so the boundary values here are the contract.
- *
- * Note: the answer schema is exported as `AnserSchema` (sic) — the
- * typo is pre-existing and left as-is by this test-only change.
  */
 import { describe, expect, it } from "vitest";
-import { AnserSchema, ProfileSchema, QuestionSchema } from "./validation";
+import { AnswerSchema, ProfileSchema, QuestionSchema } from "./validation";
 
 describe("QuestionSchema", () => {
   const valid = {
@@ -61,15 +58,15 @@ describe("QuestionSchema", () => {
   });
 });
 
-describe("AnserSchema", () => {
+describe("AnswerSchema", () => {
   it("accepts an answer of 100 characters or more", () => {
-    expect(AnserSchema.safeParse({ answer: "x".repeat(100) }).success).toBe(
+    expect(AnswerSchema.safeParse({ answer: "x".repeat(100) }).success).toBe(
       true,
     );
   });
 
   it("rejects an answer shorter than 100 characters", () => {
-    expect(AnserSchema.safeParse({ answer: "x".repeat(99) }).success).toBe(
+    expect(AnswerSchema.safeParse({ answer: "x".repeat(99) }).success).toBe(
       false,
     );
   });

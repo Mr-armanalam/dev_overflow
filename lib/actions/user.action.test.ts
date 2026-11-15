@@ -270,10 +270,10 @@ describe("getSavedQuestion", () => {
     );
   });
 
-  // BUG (user.action.ts, getSavedQuestion): `user.saved.length` is
+  // Fixed bug (user.action.ts, getSavedQuestion): `user.saved.length` is
   // read BEFORE the `if (!user)` check, so a missing user throws a
   // bare TypeError instead of "User not found".
-  it.skip("throws 'User not found' when the user does not exist", async () => {
+  it("throws 'User not found' when the user does not exist", async () => {
     mocks.user.findOne.mockReturnValue(chainable(null));
 
     await expect(
@@ -338,13 +338,13 @@ describe("getUserInfo", () => {
     );
   });
 
-  // BUG (user.action.ts, getUserInfo): the TOTAL_VIEWS criterion is
+  // Fixed bug (user.action.ts, getUserInfo): the TOTAL_VIEWS criterion is
   // computed from an aggregation on the Answer model (which has no
   // `views` field) grouped into `totalUpvotes`, while the code reads
   // `questionViews?.totalViews` — so it is always undefined and the
   // badge is always 0. The aggregation must run on the Question
   // model and group the sum as `totalViews`.
-  it.skip("awards the TOTAL_VIEWS badge from the user's question views", async () => {
+  it("awards the TOTAL_VIEWS badge from the user's question views", async () => {
     mocks.user.findOne.mockReturnValue(chainable(author));
     mocks.question.countDocuments.mockResolvedValue(0);
     mocks.answer.countDocuments.mockResolvedValue(0);

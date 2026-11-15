@@ -144,12 +144,12 @@ describe("deleteUser", () => {
     });
   });
 
-  // BUG (user-sync.ts, deleteUser): the saved-list cleanup pulls the
+  // Fixed bug (user-sync.ts, deleteUser): the saved-list cleanup pulls the
   // deleted *user's* id from other users' `saved` arrays, but `saved`
   // holds *question* ids — the update matches nothing and the deleted
   // user's questions stay saved for other users. It must pull the
   // deleted user's question ids instead.
-  it.skip("removes the deleted user's questions from other users' saved lists", async () => {
+  it("removes the deleted user's questions from other users' saved lists", async () => {
     const user = fakeUser();
     const question2 = "507f1f77bcf86cd799439088";
     mocks.user.findOneAndDelete.mockResolvedValue(user);
