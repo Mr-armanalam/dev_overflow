@@ -57,9 +57,9 @@ import {
 import { enforceAiBurstLimit } from "@/lib/ai/ratelimit";
 import { getDegradedSimilarQuestions } from "@/lib/ai/degraded";
 import {
-  ANSWER_DRAFT_V2,
+  ANSWER_DRAFT_V3,
   buildAnswerDraftPrompt,
-} from "@/lib/ai/prompts/answer-draft.v2";
+} from "@/lib/ai/prompts/answer-draft.v3";
 import { retrieveSimilar } from "@/lib/ai/rag/retrieve";
 import { getLlmProvider, getModelForTask } from "@/lib/ai/router";
 import { checkDailyBudget, isEligibleForAiDraft } from "@/lib/ai/budgets";
@@ -102,8 +102,8 @@ export const POST = async (request: Request) => {
     request,
     userId,
     "answer-draft",
-    ANSWER_DRAFT_V2.id,
-    ANSWER_DRAFT_V2.version,
+    ANSWER_DRAFT_V3.id,
+    ANSWER_DRAFT_V3.version,
     model
   );
   if (burst.limited) {
@@ -117,8 +117,8 @@ export const POST = async (request: Request) => {
     try {
       await createUsageLog({
         userId,
-        promptId: ANSWER_DRAFT_V2.id,
-        promptVersion: ANSWER_DRAFT_V2.version,
+        promptId: ANSWER_DRAFT_V3.id,
+        promptVersion: ANSWER_DRAFT_V3.version,
         modelName: model,
         task: "answer-draft",
         status: "rejected",
@@ -158,8 +158,8 @@ export const POST = async (request: Request) => {
   // A hit serves the stored draft with no provider call and no
   // budget consumption — even when the kill switch is on.
   const cacheKey = exactCacheKey(
-    ANSWER_DRAFT_V2.id,
-    ANSWER_DRAFT_V2.version,
+    ANSWER_DRAFT_V3.id,
+    ANSWER_DRAFT_V3.version,
     `${parsed.data.questionId}\n${title}\n${content}`
   );
   const exactHit = await getExactCache<CachedDraft>(cacheKey);
@@ -184,9 +184,11 @@ export const POST = async (request: Request) => {
     );
   }
 
-  // RAG (P2): retrieve similar questions for citations. Retrieval is
-  // best-effort — an empty list means the v2 prompt tells the model to
-  // say "No similar questions found" instead of hallucinating sources.
+  // RAG (P2, grounded in answers since v3): retrieve similar
+  // questions for citations, with their top community answers.
+  // Retrieval is best-effort — an empty list means the v3 prompt
+  // tells the model to say "No similar questions found" instead of
+  // hallucinating sources.
   const sources = await retrieveSimilar({
     text: `${title}\n${content}`,
     excludeQuestionId: String(question._id),
@@ -199,6 +201,10 @@ export const POST = async (request: Request) => {
     // them like any prompt input so a secret pasted in a question
     // can never be echoed back through a draft.
     excerpt: scrubPII(source.snippet),
+    answers: (source.answers ?? []).map((answer) => ({
+      upvotes: answer.upvotes,
+      content: scrubPII(answer.content),
+    })),
   }));
 
   // Semantic cache (P3): when the closest retrieved question is
@@ -231,8 +237,8 @@ export const POST = async (request: Request) => {
     try {
       await createUsageLog({
         userId,
-        promptId: ANSWER_DRAFT_V2.id,
-        promptVersion: ANSWER_DRAFT_V2.version,
+        promptId: ANSWER_DRAFT_V3.id,
+        promptVersion: ANSWER_DRAFT_V3.version,
         modelName: model,
         task: "answer-draft",
         status: "rejected",
@@ -264,8 +270,8 @@ export const POST = async (request: Request) => {
   try {
     usageLog = await createUsageLog({
       userId,
-      promptId: ANSWER_DRAFT_V2.id,
-      promptVersion: ANSWER_DRAFT_V2.version,
+      promptId: ANSWER_DRAFT_V3.id,
+      promptVersion: ANSWER_DRAFT_V3.version,
       modelName: model,
       task: "answer-draft",
       status: flagged ? "flagged" : "pending",
@@ -283,7 +289,7 @@ export const POST = async (request: Request) => {
   let result;
   try {
     result = await provider.stream({
-      system: ANSWER_DRAFT_V2.system,
+      system: ANSWER_DRAFT_V3.system,
       prompt: buildAnswerDraftPrompt({ title, content, context }),
       model,
       maxTokens: 2048,
@@ -319,8 +325,8 @@ export const POST = async (request: Request) => {
             questionId: parsed.data.questionId,
             // Strip any secrets the model echoed before storing.
             content: draftText,
-            promptId: ANSWER_DRAFT_V2.id,
-            promptVersion: ANSWER_DRAFT_V2.version,
+            promptId: ANSWER_DRAFT_V3.id,
+            promptVersion: ANSWER_DRAFT_V3.version,
             modelName: model,
             status: "generated",
           });
@@ -335,8 +341,8 @@ export const POST = async (request: Request) => {
               score: Math.round(source.score * 1000) / 1000,
             })),
             modelName: model,
-            promptId: ANSWER_DRAFT_V2.id,
-            promptVersion: ANSWER_DRAFT_V2.version,
+            promptId: ANSWER_DRAFT_V3.id,
+            promptVersion: ANSWER_DRAFT_V3.version,
           };
           await setExactCache(
             cacheKey,

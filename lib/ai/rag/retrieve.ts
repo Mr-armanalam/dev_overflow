@@ -11,10 +11,11 @@
  */
 import type { PipelineStage, Types } from "mongoose";
 import { connectToDatabase } from "@/lib/mongoose";
+import Answer from "@/database/answer.model";
 import Question from "@/database/question.model";
 import QuestionEmbedding from "@/database/question-embedding.model";
 import { getLlmProvider } from "@/lib/ai/router";
-import { scrubPII } from "@/lib/ai/guardrails/input";
+import { scrubPII, stripHtmlToText } from "@/lib/ai/guardrails/input";
 
 export const RAG_VECTOR_INDEX_NAME = "question_embeddings_vector_index";
 export const RAG_RETRIEVAL_TOP_K = 5;
@@ -22,6 +23,15 @@ const RAG_VECTOR_SEARCH_LIMIT = 12;
 const RAG_VECTOR_SEARCH_CANDIDATES = 100;
 /** Recency decays with a ~6-month half-life. */
 const RAG_RECENCY_HALF_LIFE_DAYS = 180;
+/** Answer content is truncated to ~800 chars per answer in the prompt. */
+export const RAG_ANSWER_SNIPPET_CHARS = 800;
+
+export interface RetrievedAnswer {
+  answerId: string;
+  /** Plain text, PII-scrubbed, truncated to ~800 chars. */
+  content: string;
+  upvotes: number;
+}
 
 export interface RetrievedSource {
   questionId: string;
@@ -33,6 +43,24 @@ export interface RetrievedSource {
   cosine: number;
   upvotes: number;
   createdAt: Date;
+  /**
+   * The community's actual answers to this question, top 2 by upvote
+   * count. Optional so older callers (similar route, MCP tools) keep
+   * working — they ignore this field. Populated best-effort: an
+   * answers failure never takes the question sources away.
+   */
+  answers?: RetrievedAnswer[];
+}
+
+/**
+ * Answer content as it goes into a prompt: HTML stripped to plain
+ * text, PII scrubbed like any prompt input, truncated to ~800 chars.
+ * Pure — covered by lib/ai/rag/retrieve.test.ts.
+ */
+export function formatRetrievedAnswer(content: string): string {
+  const text = scrubPII(stripHtmlToText(content));
+  if (text.length <= RAG_ANSWER_SNIPPET_CHARS) return text;
+  return `${text.slice(0, RAG_ANSWER_SNIPPET_CHARS).trimEnd()}…`;
 }
 
 function normaliseUpvotes(upvotes: number): number {
@@ -135,7 +163,7 @@ export async function retrieveSimilar(
       questions.map((question) => [String(question._id), question.title])
     );
 
-    return [...bestByQuestion.values()]
+    const top = [...bestByQuestion.values()]
       .filter((source) => titles.has(source.questionId))
       .map((source) => ({
         ...source,
@@ -147,11 +175,59 @@ export async function retrieveSimilar(
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
+    await attachTopAnswers(top);
+    return top;
   } catch (error) {
     // Missing index, no embeddings yet, provider down — retrieval is
     // best-effort. Log once and return no sources; the caller drafts
     // from general knowledge instead of failing.
     console.error("RAG retrieval failed, continuing without sources", error);
     return [];
+  }
+}
+
+/**
+ * Grounding (v3): attach the top 2 answers per retrieved question,
+ * ordered by upvote count descending, so drafts are generated from
+ * the community's actual answers instead of question text alone.
+ * Reranking stays question-signal only — answers never change which
+ * questions are retrieved, only what the model reads about them.
+ * Best-effort: an answers failure logs once and leaves the sources
+ * without answers, instead of taking the questions away.
+ */
+async function attachTopAnswers(
+  sources: RetrievedSource[]
+): Promise<void> {
+  if (sources.length === 0) return;
+  try {
+    await connectToDatabase();
+    const answers = await Answer.find({
+      question: { $in: sources.map((source) => source.questionId) },
+    })
+      .select("_id question content upvotes")
+      .lean();
+    const byQuestion = new Map<string, typeof answers>();
+    for (const answer of answers) {
+      const key = String(answer.question);
+      const list = byQuestion.get(key) ?? [];
+      list.push(answer);
+      byQuestion.set(key, list);
+    }
+    for (const source of sources) {
+      const list = byQuestion.get(source.questionId) ?? [];
+      source.answers = list
+        .sort((a, b) => b.upvotes.length - a.upvotes.length)
+        .slice(0, 2)
+        .map((answer) => ({
+          answerId: String(answer._id),
+          content: formatRetrievedAnswer(answer.content),
+          upvotes: answer.upvotes.length,
+        }));
+    }
+  } catch (error) {
+    console.error(
+      "RAG retrieval: could not load answers, continuing without them",
+      error
+    );
   }
 }

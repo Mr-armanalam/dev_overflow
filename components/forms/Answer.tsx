@@ -23,6 +23,11 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import ParseHTML from "../shared/ParseHTML";
 import { renderAiMarkdown } from "@/lib/ai/markdown";
+import {
+  applyValidationResult,
+  groundednessLabel,
+  type ValidationGroundedness,
+} from "@/lib/ai/validation-result";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 
 interface Props {
@@ -30,12 +35,15 @@ interface Props {
 }
 
 /** One RAG source, from the `x-ai-sources` response header of
- *  /api/ai/draft. `n` matches the [n] citation markers in the draft. */
+ *  /api/ai/draft. `n` matches the [n] citation markers in the draft.
+ *  `answers` arrives from POST /api/ai/validate (richer than the
+ *  header sources): the top community answers behind the citation. */
 interface AiSource {
   n: number;
   questionId: string;
   title: string;
   score: number;
+  answers?: Array<{ answerId: string; snippet: string; upvotes: number }>;
 }
 
 // NOTE: the author is derived from the Clerk session inside
@@ -64,6 +72,15 @@ const Answer = ({ questionId }: Props) => {
   const [aiFeedback, setAiFeedback] = useState<
     "helpful" | "not_helpful" | null
   >(null);
+  // Self-validation (v3): runs after the stream completes. The badge
+  // says how well the draft is grounded in community answers; the
+  // note appears when the check revised the draft.
+  const [aiValidating, setAiValidating] = useState(false);
+  const [aiGroundedness, setAiGroundedness] =
+    useState<ValidationGroundedness | null>(null);
+  const [aiValidationNote, setAiValidationNote] = useState<string | null>(
+    null
+  );
   // P3 cache + degraded mode: a note when the draft came from the
   // cache ("Served from cache" / "From a similar question"), and the
   // similar-questions list the endpoint serves with a degraded error
@@ -117,6 +134,9 @@ const Answer = ({ questionId }: Props) => {
     setAiUsageLogId(null);
     setAiSources([]);
     setAiFeedback(null);
+    setAiValidating(false);
+    setAiGroundedness(null);
+    setAiValidationNote(null);
     setAiCacheNote(null);
     setAiCacheSimilar(null);
     setAiDegradedSimilar([]);
@@ -146,6 +166,98 @@ const Answer = ({ questionId }: Props) => {
     }
   };
 
+  /**
+   * Self-validation (v3): POST /api/ai/validate with the streamed
+   * draft. A revised draft replaces the Markdown (the HTML re-renders
+   * via the effect on aiDraftMarkdown); the Sources list upgrades to
+   * the response's richer entries when present. Any failure keeps the
+   * original draft silently — validation must never take it away. A
+   * malformed response is ignored entirely.
+   */
+  const runAiValidation = async (
+    draftText: string,
+    usageLogId: string | null
+  ) => {
+    setAiValidating(true);
+    try {
+      const response = await fetch("/api/ai/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionId: JSON.parse(questionId),
+          draft: draftText,
+          ...(usageLogId ? { usageLogId } : {}),
+        }),
+      });
+      if (!response.ok) return;
+      const data: unknown = await response.json().catch(() => null);
+      if (!data || typeof data !== "object") return;
+      const result = data as {
+        groundedness?: unknown;
+        issues?: unknown;
+        revisedDraft?: unknown;
+        sources?: unknown;
+      };
+      const groundedness =
+        result.groundedness === "grounded" ||
+        result.groundedness === "partial" ||
+        result.groundedness === "general-knowledge"
+          ? result.groundedness
+          : null;
+      if (!groundedness) return;
+      const issuesFixed = Array.isArray(result.issues)
+        ? result.issues.length
+        : 0;
+      const revisedDraft =
+        typeof result.revisedDraft === "string" &&
+        result.revisedDraft.trim().length > 0
+          ? result.revisedDraft
+          : null;
+      const merged = applyValidationResult(draftText, {
+        revisedDraft,
+        groundedness,
+        issuesFixed,
+      });
+      if (merged.markdown !== draftText) {
+        setAiDraftMarkdown(merged.markdown);
+      }
+      if (merged.note) {
+        setAiValidationNote(merged.note);
+      }
+      setAiGroundedness(merged.groundedness);
+      // Richer Sources (with top answers) when the response carries
+      // them; otherwise keep the header-derived list.
+      if (Array.isArray(result.sources) && result.sources.length > 0) {
+        const validated = result.sources.filter(
+          (item): item is AiSource =>
+            typeof item === "object" &&
+            item !== null &&
+            typeof (item as AiSource).n === "number" &&
+            typeof (item as AiSource).questionId === "string" &&
+            typeof (item as AiSource).title === "string" &&
+            typeof (item as AiSource).score === "number" &&
+            (typeof (item as AiSource).answers === "undefined" ||
+              (Array.isArray((item as AiSource).answers) &&
+                (item as AiSource).answers!.every(
+                  (answer) =>
+                    typeof answer === "object" &&
+                    answer !== null &&
+                    typeof answer.answerId === "string" &&
+                    typeof answer.snippet === "string" &&
+                    typeof answer.upvotes === "number"
+                )))
+        );
+        if (validated.length > 0) {
+          setAiSources(validated);
+        }
+      }
+    } catch {
+      // Validation is best-effort: keep the original draft silently.
+    } finally {
+      setAiValidating(false);
+    }
+  };
+
   const generateAIAnswer = async () => {
     setIsSubmittingAI(true);
     setAiError(null);
@@ -156,6 +268,9 @@ const Answer = ({ questionId }: Props) => {
     setAiFeedback(null);
     setAiUsageLogId(null);
     setAiSources([]);
+    setAiValidating(false);
+    setAiGroundedness(null);
+    setAiValidationNote(null);
     setAiCacheNote(null);
     setAiCacheSimilar(null);
     setAiDegradedSimilar([]);
@@ -268,6 +383,14 @@ const Answer = ({ questionId }: Props) => {
         setAiError("The AI returned an empty draft. Please try regenerating.");
         return;
       }
+      // Self-validation (v3): check the draft against the community
+      // answers before the user can insert it. Skipped for cache hits
+      // — a cached draft costs no provider call, and the revised text
+      // is what is cached. Never blocks the draft: a failed check
+      // keeps the original.
+      if (!cacheKind) {
+        await runAiValidation(draftText, usageLogId);
+      }
       setAiDraftReady(true);
     } catch (error) {
       console.log(error);
@@ -361,15 +484,22 @@ const Answer = ({ questionId }: Props) => {
             <p className="small-medium text-dark400_light800">
               AI draft — review before posting
             </p>
-            <span className="flex items-center gap-1 rounded-md bg-primary-500/10 px-2 py-0.5 text-xs font-medium text-primary-500">
-              <Image
-                src={"/assets/icons/stars.svg"}
-                alt=""
-                width={12}
-                height={12}
-                className="object-contain"
-              />
-              Gemini 2.5 Flash
+            <span className="flex items-center gap-1">
+              {aiGroundedness && (
+                <span className="rounded-md bg-primary-500/10 px-2 py-0.5 text-xs font-medium text-primary-500">
+                  {groundednessLabel(aiGroundedness)}
+                </span>
+              )}
+              <span className="flex items-center gap-1 rounded-md bg-primary-500/10 px-2 py-0.5 text-xs font-medium text-primary-500">
+                <Image
+                  src={"/assets/icons/stars.svg"}
+                  alt=""
+                  width={12}
+                  height={12}
+                  className="object-contain"
+                />
+                Gemini 2.5 Flash
+              </span>
             </span>
           </div>
 
@@ -396,6 +526,16 @@ const Answer = ({ questionId }: Props) => {
               Generating draft…
             </p>
           )}
+          {aiValidating && (
+            <p className="mt-3 body-regular text-light-500">
+              Validating draft…
+            </p>
+          )}
+          {aiValidationNote && (
+            <p className="mt-3 small-regular text-primary-500">
+              {aiValidationNote}
+            </p>
+          )}
           {aiDraftHtml && (
             <div className="mt-3">
               <ParseHTML data={aiDraftHtml} />
@@ -415,6 +555,19 @@ const Answer = ({ questionId }: Props) => {
                     >
                       [{source.n}] {source.title}
                     </Link>
+                    {source.answers && source.answers.length > 0 && (
+                      <ul className="mt-1 ml-4 space-y-1">
+                        {source.answers.map((answer) => (
+                          <li
+                            key={answer.answerId}
+                            className="small-regular text-light-500"
+                          >
+                            Top answer ({answer.upvotes} upvotes):{" "}
+                            {answer.snippet}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>
