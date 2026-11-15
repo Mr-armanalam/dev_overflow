@@ -293,13 +293,26 @@ export const POST = async (request: Request) => {
       scrubTextChunks: scrubOutput,
       onFinish: async (finish) => {
         try {
+          const draftText = scrubOutput(finish.text);
+          // An empty draft must never be stored or cached: it would
+          // poison the exact + semantic caches and repeat instantly
+          // on the next identical question.
+          if (draftText.trim().length === 0) {
+            await updateUsageLog(usageLogId, {
+              inputTokens: finish.usage.inputTokens,
+              outputTokens: finish.usage.outputTokens,
+              latencyMs: Date.now() - startedAt,
+              status: "error",
+              errorCode: "EMPTY_RESPONSE",
+            });
+            return;
+          }
           await updateUsageLog(usageLogId, {
             inputTokens: finish.usage.inputTokens,
             outputTokens: finish.usage.outputTokens,
             latencyMs: Date.now() - startedAt,
             status: flagged ? "flagged" : "success",
           });
-          const draftText = scrubOutput(finish.text);
           await connectToDatabase();
           await AiDraft.create({
             userId,
