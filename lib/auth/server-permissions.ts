@@ -9,7 +9,7 @@
  * trusted for authorization; UI gating in `lib/auth/use-permissions`
  * only decides what to show.
  */
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { notFound, redirect } from "next/navigation";
 import { connectToDatabase } from "@/lib/mongoose";
 import User, { type IUser } from "@/database/user.model";
@@ -33,6 +33,17 @@ export interface ActingUser {
  * Resolve the acting user from the Clerk session. Returns null when
  * nobody is signed in. Never throws for a signed-in user — a missing
  * Mongo row just means role "user" until the webhook syncs.
+ *
+ * Role sources, in order: the JWT claims, then the Mongo mirror. When
+ * the claims carry no role, the Backend API breaks the tie: the claims
+ * are a snapshot from token issuance (a role set in the Clerk Dashboard
+ * after the token was issued is missing), and the mirror only updates
+ * when the Clerk webhook delivers — which never happens on localhost.
+ * Without the tiebreaker the same user passed the admin gate on one
+ * request (fresh token) and 404'd on the next (stale token + stale
+ * mirror). The API call only fires when the claims are silent; a
+ * failure keeps the claims/Mongo resolution instead of failing the
+ * request.
  */
 export async function resolveActingUser(): Promise<ActingUser | null> {
   const { userId: clerkId, sessionClaims } = await auth();
@@ -48,9 +59,29 @@ export async function resolveActingUser(): Promise<ActingUser | null> {
   await connectToDatabase();
   const mongoUser = await User.findOne({ clerkId });
 
+  let role = claimRole ?? parseUserRole(mongoUser?.role);
+
+  if (!claimRole) {
+    try {
+      const clerkUser = await currentUser();
+      const liveRole = parseUserRoleOrNull(
+        clerkUser?.publicMetadata?.role
+      );
+      if (liveRole) {
+        role = liveRole;
+        // Heal the mirror so the next request doesn't need the API call.
+        if (mongoUser && mongoUser.role !== liveRole) {
+          await User.updateOne({ clerkId }, { role: liveRole });
+        }
+      }
+    } catch {
+      // Keep the claims/Mongo role; the gate stays fail-closed.
+    }
+  }
+
   return {
     clerkId,
-    role: claimRole ?? parseUserRole(mongoUser?.role),
+    role,
     mongoUser,
   };
 }
